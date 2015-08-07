@@ -51,6 +51,8 @@ class FIRDeconvolution(object):
 		ch.setFormatter(formatter)
 		self.logger.addHandler(ch)
 
+		self.logger.info('initializing deconvolution with signal sample freq %2.2f, etc etc.' % (sample_frequency))
+
 		self.signal = signal 
 		if len(self.signal.shape) == 1:
 			self.signal = self.signal[np.newaxis, :]
@@ -73,12 +75,14 @@ class FIRDeconvolution(object):
 			self.covariates = {}
 			for ev, evn in zip(self.events, self.event_names):
 				self.covariates.update({evn: np.ones(len(self.events[ev]))})
+		else:
+			self.covariates = covariates
 
 		# if we did not create the covariates dictionary, this could fail
 		nr_events_per_event_type = [len(self.events[e]) for e in self.events]
 		nr_covariates_per_event_type = [len(self.covariates[c]) for c in self.covariates]
-		assert nr_covariates_per_event_type == nr_events_per_event_type, \
-			'numbers of events and covariates don\'t line up.\n%s svs %s' % ( str(nr_covariates_per_event_type), str(nr_events_per_event_type) )
+		# assert nr_covariates_per_event_type == nr_events_per_event_type, \
+		# 	'numbers of events and covariates don\'t line up.\n%s svs %s' % ( str(nr_covariates_per_event_type), str(nr_events_per_event_type) )
 		self.number_of_event_types = len(self.covariates)
 
 		self.sample_frequency = sample_frequency
@@ -154,7 +158,11 @@ class FIRDeconvolution(object):
 			# document the creation of the designmatrix step by step
 			self.logger.info('creating regressor for ' + covariate)
 			indices = np.arange(i*self.deconvolution_interval_size,(i+1)*self.deconvolution_interval_size, dtype = int)
-			self.design_matrix[indices] = self.create_event_regressors(self.event_times_indices[covariate], self.covariates[covariate])
+			if len(covariate.split('.')) > 0:
+				which_event_time_indices = covariate.split('.')[0]
+			else:
+				which_event_time_indices = covariate
+			self.design_matrix[indices] = self.create_event_regressors(self.event_times_indices[which_event_time_indices], self.covariates[covariate])
 
 	def add_continuous_regressors_to_design_matrix(self, regressor):
 		"""
