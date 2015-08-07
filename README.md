@@ -9,5 +9,7 @@ numpy, scipy, matplotlib
 statsmodels for fitting functionality extension
 
 TODO
+- debug the covariate functionality (!)
 - bootstrapping the residuals for single-channel data
 - extend fitting to ridge regression, using sklearn cross validation
+
