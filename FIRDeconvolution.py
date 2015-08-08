@@ -18,15 +18,9 @@ import numpy as np
 import scipy as sp
 import matplotlib.pyplot as pl
 
-# import pandas as pd
 import statsmodels.api as sm
-# import sklearn.linear_model.Ridge as Ridge
 import numpy.linalg as LA
 
-# import bottleneck as bn
-import seaborn as sn
-
-sn.set(style="ticks")	
 
 from IPython import embed as shell
 
@@ -46,7 +40,7 @@ class FIRDeconvolution(object):
 
 		self.logger = logging.getLogger('FIRDeconvolution')
 		ch = logging.StreamHandler()
-		ch.setLevel(logging.DEBUG)
+		ch.setLevel(logging.INFO)
 		formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 		ch.setFormatter(formatter)
 		self.logger.addHandler(ch)
@@ -78,11 +72,12 @@ class FIRDeconvolution(object):
 		else:
 			self.covariates = covariates
 
-		# if we did not create the covariates dictionary, this could fail
+		##
+		#	create instance variables that determine calculations
+		##
+
 		nr_events_per_event_type = [len(self.events[e]) for e in self.events]
 		nr_covariates_per_event_type = [len(self.covariates[c]) for c in self.covariates]
-		# assert nr_covariates_per_event_type == nr_events_per_event_type, \
-		# 	'numbers of events and covariates don\'t line up.\n%s svs %s' % ( str(nr_covariates_per_event_type), str(nr_events_per_event_type) )
 		self.number_of_event_types = len(self.covariates)
 
 		self.sample_frequency = sample_frequency
@@ -92,18 +87,10 @@ class FIRDeconvolution(object):
 		else:
 			self.deconvolution_frequency = deconvolution_frequency
 
-		# first checks
-		self.resampling_factor = self.sample_frequency/self.deconvolution_frequency
-		assert round(self.sample_frequency/self.deconvolution_frequency) == self.sample_frequency/self.deconvolution_frequency, \
-				'sample frequency and deconvolution frequency should be relative integers'
-		
+		self.resampling_factor = self.sample_frequency/self.deconvolution_frequency		
 		self.deconvolution_interval_size = (self.deconvolution_interval[1] - self.deconvolution_interval[0]) * self.deconvolution_frequency
-		assert round(self.deconvolution_interval_size) == self.deconvolution_interval_size, 'self.sample_interval_size should be integer'
+		assert round(self.deconvolution_interval_size) == self.deconvolution_interval_size, 'self.sample_interval_size should be integer. I don\'t know why, but it\'s neater.'
 		self.deconvolution_interval_timepoints = np.linspace(self.deconvolution_interval[0],self.deconvolution_interval[1],self.deconvolution_interval_size)
-
-		##
-		#	create instance variables that determine calculations
-		##
 
 		# duration of signal in seconds and at deconvolution frequency
 		self.signal_duration = self.signal.shape[-1] / self.sample_frequency
@@ -131,9 +118,13 @@ class FIRDeconvolution(object):
 
 		# fill up output array
 		for cov, eti in zip(covariates, event_times_indices):
-			self.logger.info('deconv samples are starting before the data starts.')
-			self.logger.info('deconv samples are continuing after the data stops.')
-			self.logger.info('event falls outside of the scope of the data.')
+			if eti < 0:
+				self.logger.info('deconv samples are starting before the data starts.')
+			if eti+self.deconvolution_interval_size > self.resampled_signal_size:
+				self.logger.info('deconv samples are continuing after the data stops.')
+			if eti > self.resampled_signal_size:
+				self.logger.info('event falls outside of the scope of the data.')
+			# these needn't be assertions
 			# assert eti > 0, \
 			# 		'deconv samples are starting before the data ends.'
 			# assert eti+self.deconvolution_interval_size < self.resampled_signal_size, \
@@ -164,37 +155,41 @@ class FIRDeconvolution(object):
 				which_event_time_indices = covariate
 			self.design_matrix[indices] = self.create_event_regressors(self.event_times_indices[which_event_time_indices], self.covariates[covariate])
 
+		self.logger.info('created %s design_matrix' % (str(self.design_matrix.shape)))
+
 	def add_continuous_regressors_to_design_matrix(self, regressor):
 		"""
 		add_continuous_regressors_to_design_matrix expects as input a regressor shaped similarly to the design matrix.
 		"""
-
+		previous_design_matrix_shape = design_matrix.shape
 		if len(regressors.shape) == 1:
 			regressors = regressor[np.newaxis, :]
 		assert regressors.shape[1] is self.resampled_signal.shape[1], \
 				'additional regressor shape %s does not conform to designmatrix shape %s' % (regressors.shape, self.resampled_signal.shape)
 		# and, an hstack append
 		self.design_matrix = np.hstack((self.design_matrix, regressors))
+		self.logger.info('added %s continuous regressors to %s design_matrix, shape now %s' % (str(regressors.shape), str(previous_design_matrix_shape), str(design_matrix.shape)))
 
 	def regress(self, method = 'lstsq'):
 		"""
 		regress performs linear least squares regression of the designmatrix on the data. 
 		one may choose a method out of the options 'lstsq', 'sm_ols'.
 		"""
-		# shell()
 
 		if method is 'lstsq':
-			betas, residuals, rank, s = LA.lstsq(self.design_matrix.T, self.resampled_signal.T)
+			self.betas, self.residuals, rank, s = LA.lstsq(self.design_matrix.T, self.resampled_signal.T)
 		elif method is 'sm_ols':
-			assert self.resampled_signal.shape[1] == 1, \
+			assert self.resampled_signal.shape[0] == 1, \
 					'signal input into statsmodels OLS cannot contain multiple signals at once, present shape %s' % str(self.resampled_signal.shape)
-			model = sm.OLS(self.resampled_signal,self.design_matrix.T)
+			my_model = self.design_matrix.copy()
+			my_model = sm.add_constant(my_model.T)
+			model = sm.OLS(np.squeeze(self.resampled_signal),my_model)
 			results = model.fit()
-			betas = results.params
-			residuals = model.resid
+			# make betas and residuals that are compatible with the LA.lstsq type.
+			self.betas = np.array(results.params)[1:].reshape((self.design_matrix.shape[0], self.resampled_signal.shape[0]))
+			self.residuals = np.array(results.resid).reshape(self.resampled_signal.shape)
 
-		self.betas = betas
-		self.residuals = residuals
+		self.logger.info('performed %s regression on %s design_matrix and %s signal' % (method, str(self.design_matrix.shape), str(self.resampled_signal.shape)))
 
 	def betas_for_cov(self, covariate = '0'):
 		"""
@@ -202,13 +197,14 @@ class FIRDeconvolution(object):
 		covariate is specified by name.
 		"""
 
-		# find the index in the designmatrix of the current covariat
+		# find the index in the designmatrix of the current covariate
 		this_covariate_index = self.covariates.keys().index(covariate)
 		return self.betas[this_covariate_index*self.deconvolution_interval_size:(this_covariate_index+1)*self.deconvolution_interval_size]
 
 	def betas_for_events(self):
 		"""
-		betas_for_events creates an internal self.betas_per_event_type array, of (nr_covariates x self.devonvolution_interval_size)
+		betas_for_events creates an internal self.betas_per_event_type array, of (nr_covariates x self.devonvolution_interval_size), 
+		which holds the outcome betas per event type
 		"""
 
 		self.betas_per_event_type = np.zeros((len(self.covariates), self.deconvolution_interval_size, self.resampled_signal.shape[0]))
@@ -217,7 +213,8 @@ class FIRDeconvolution(object):
 
 	def predict_from_design_matrix(self, design_matrix):
 		"""
-		predict_from_design_matrix takes a design matrix (timepoints, betas.shape)
+		predict_from_design_matrix takes a design matrix (timepoints, betas.shape), 
+		and returns the predicted signal given this design matrix.
 		"""
 		# check if we have already run the regression - which is necessary
 		assert hasattr(self, 'betas'), 'no betas found, please run regression before prediction'
