@@ -45,7 +45,7 @@ class FIRDeconvolution(object):
 		ch.setFormatter(formatter)
 		self.logger.addHandler(ch)
 
-		self.logger.info('initializing deconvolution with signal sample freq %2.2f, etc etc.' % (sample_frequency))
+		self.logger.debug('initializing deconvolution with signal sample freq %2.2f, etc etc.' % (sample_frequency))
 
 		self.signal = signal 
 		if len(self.signal.shape) == 1:
@@ -68,7 +68,7 @@ class FIRDeconvolution(object):
 		if covariates == None:
 			self.covariates = {}
 			for ev, evn in zip(self.events, self.event_names):
-				self.covariates.update({evn: np.ones(len(self.events[ev]))})
+				self.covariates.update({ evn: np.ones(len(self.events[ev])) })
 		else:
 			self.covariates = covariates
 
@@ -119,11 +119,11 @@ class FIRDeconvolution(object):
 		# fill up output array
 		for cov, eti in zip(covariates, event_times_indices):
 			if eti < 0:
-				self.logger.info('deconv samples are starting before the data starts.')
+				self.logger.debug('deconv samples are starting before the data starts.')
 			if eti+self.deconvolution_interval_size > self.resampled_signal_size:
-				self.logger.info('deconv samples are continuing after the data stops.')
+				self.logger.debug('deconv samples are continuing after the data stops.')
 			if eti > self.resampled_signal_size:
-				self.logger.info('event falls outside of the scope of the data.')
+				self.logger.debug('event falls outside of the scope of the data.')
 			# these needn't be assertions
 			# assert eti > 0, \
 			# 		'deconv samples are starting before the data ends.'
@@ -147,7 +147,7 @@ class FIRDeconvolution(object):
 
 		for i, covariate in enumerate(self.covariates.keys()):
 			# document the creation of the designmatrix step by step
-			self.logger.info('creating regressor for ' + covariate)
+			self.logger.debug('creating regressor for ' + covariate)
 			indices = np.arange(i*self.deconvolution_interval_size,(i+1)*self.deconvolution_interval_size, dtype = int)
 			if len(covariate.split('.')) > 0:
 				which_event_time_indices = covariate.split('.')[0]
@@ -155,7 +155,10 @@ class FIRDeconvolution(object):
 				which_event_time_indices = covariate
 			self.design_matrix[indices] = self.create_event_regressors(self.event_times_indices[which_event_time_indices], self.covariates[covariate])
 
-		self.logger.info('created %s design_matrix' % (str(self.design_matrix.shape)))
+		# temporal demean, as we expect the data to be.
+		self.design_matrix = (self.design_matrix.T - self.design_matrix.mean(axis = -1)).T
+		
+		self.logger.debug('created %s design_matrix' % (str(self.design_matrix.shape)))
 
 	def add_continuous_regressors_to_design_matrix(self, regressor):
 		"""
@@ -168,7 +171,7 @@ class FIRDeconvolution(object):
 				'additional regressor shape %s does not conform to designmatrix shape %s' % (regressors.shape, self.resampled_signal.shape)
 		# and, an hstack append
 		self.design_matrix = np.hstack((self.design_matrix, regressors))
-		self.logger.info('added %s continuous regressors to %s design_matrix, shape now %s' % (str(regressors.shape), str(previous_design_matrix_shape), str(design_matrix.shape)))
+		self.logger.debug('added %s continuous regressors to %s design_matrix, shape now %s' % (str(regressors.shape), str(previous_design_matrix_shape), str(design_matrix.shape)))
 
 	def regress(self, method = 'lstsq'):
 		"""
@@ -189,7 +192,7 @@ class FIRDeconvolution(object):
 			self.betas = np.array(results.params).reshape((self.design_matrix.shape[0], self.resampled_signal.shape[0]))
 			self.residuals = np.array(results.resid).reshape(self.resampled_signal.shape)
 
-		self.logger.info('performed %s regression on %s design_matrix and %s signal' % (method, str(self.design_matrix.shape), str(self.resampled_signal.shape)))
+		self.logger.debug('performed %s regression on %s design_matrix and %s signal' % (method, str(self.design_matrix.shape), str(self.resampled_signal.shape)))
 
 	def betas_for_cov(self, covariate = '0'):
 		"""
