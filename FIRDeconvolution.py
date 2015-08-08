@@ -181,12 +181,12 @@ class FIRDeconvolution(object):
 		elif method is 'sm_ols':
 			assert self.resampled_signal.shape[0] == 1, \
 					'signal input into statsmodels OLS cannot contain multiple signals at once, present shape %s' % str(self.resampled_signal.shape)
-			my_model = self.design_matrix.copy()
-			my_model = sm.add_constant(my_model.T)
+			my_model = self.design_matrix.copy().T
+			# my_model = sm.add_constant(my_model)
 			model = sm.OLS(np.squeeze(self.resampled_signal),my_model)
 			results = model.fit()
 			# make betas and residuals that are compatible with the LA.lstsq type.
-			self.betas = np.array(results.params)[1:].reshape((self.design_matrix.shape[0], self.resampled_signal.shape[0]))
+			self.betas = np.array(results.params).reshape((self.design_matrix.shape[0], self.resampled_signal.shape[0]))
 			self.residuals = np.array(results.resid).reshape(self.resampled_signal.shape)
 
 		self.logger.info('performed %s regression on %s design_matrix and %s signal' % (method, str(self.design_matrix.shape), str(self.resampled_signal.shape)))
