@@ -180,7 +180,8 @@ class FIRDeconvolution(object):
 		"""
 
 		if method is 'lstsq':
-			self.betas, self.residuals, rank, s = LA.lstsq(self.design_matrix.T, self.resampled_signal.T)
+			self.betas, residuals_sum, rank, s = LA.lstsq(self.design_matrix.T, self.resampled_signal.T)
+			self.residuals = self.resampled_signal - self.predict_from_design_matrix(self.design_matrix)
 		elif method is 'sm_ols':
 			assert self.resampled_signal.shape[0] == 1, \
 					'signal input into statsmodels OLS cannot contain multiple signals at once, present shape %s' % str(self.resampled_signal.shape)
