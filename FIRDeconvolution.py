@@ -94,7 +94,7 @@ class FIRDeconvolution(object):
 
 		# duration of signal in seconds and at deconvolution frequency
 		self.signal_duration = self.signal.shape[-1] / self.sample_frequency
-		self.resampled_signal_size = self.signal_duration*self.deconvolution_frequency
+		self.resampled_signal_size = int(self.signal_duration*self.deconvolution_frequency)
 		self.resampled_signal = sp.signal.resample(self.signal, self.resampled_signal_size, axis = -1)
 
 		# indices of events in the resampled signal, keeping this as a list instead of an array
@@ -224,5 +224,55 @@ class FIRDeconvolution(object):
 		assert design_matrix.shape[0] == self.betas.shape[0], \
 					'designmatrix needs to have the same number of regressors as the betas already calculated'
 		return np.dot(self.betas.T, design_matrix)
+
+	def calculate_rsq(self):
+		"""
+		calculate_rsq calculates coefficient of determination, or r-squared. 
+		defined here as 1.0 - SS_res / SS_tot 
+		"""
+		assert hasattr(self, 'betas'), 'no betas found, please run regression before rsq'
+
+		explained_signal = self.predict_from_design_matrix(self.design_matrix).T
+		self.rsq = 1.0 - np.sum((explained_signal.squeeze() - self.resampled_signal.squeeze())**2) / np.sum(self.resampled_signal.squeeze()**2) 
+		return self.rsq
+
+	def bootstrap_on_residuals(self, nr_repetitions = 1000):
+		"""
+		bootstrap_on_residuals bootstraps, for nr_repetitions, by shuffling the residuals. 
+		bootstrap_on_residuals should only be used on single-channel data, as otherwise the memory load might 
+		increase too much. This uses the lstsq backend regression for fast fitting across nr_repetitions channels.
+		Please note that shuffling the residuals may change the autocorrelation of the bootstrap samples 
+		relative to that of the original data and that may reduce validity.
+		"""
+		assert self.resampled_signal.shape[0] == 1, \
+					'signal input into bootstrap_on_residuals cannot contain signals from multiple channels at once, present shape %s' % str(self.resampled_signal.shape)
+		assert hasattr(self, 'betas'), 'no betas found, please run regression before bootstrapping'
+
+		# create bootstrap data by taking the residuals
+		bootstrap_data = np.zeros((self.resampled_signal_size, nr_repetitions))
+		explained_signal = self.predict_from_design_matrix(self.design_matrix).T
+
+		for x in range(bootstrap_data.shape[-1]): # loop over bootstrapsamples
+			bootstrap_data[:,x] = (self.residuals.T[np.random.permutation(self.resampled_signal_size)] + explained_signal).squeeze()
+
+		self.bootstrap_betas, bs_residuals, rank, s = LA.lstsq(self.design_matrix.T, bootstrap_data)
+
+		self.bootstrap_betas_per_event_type = np.zeros((len(self.covariates), self.deconvolution_interval_size, nr_repetitions))
+
+		for i, covariate in enumerate(self.covariates.keys()):
+			# find the index in the designmatrix of the current covariate
+			this_covariate_index = self.covariates.keys().index(covariate)
+			self.bootstrap_betas_per_event_type[i] = self.bootstrap_betas[this_covariate_index*self.deconvolution_interval_size:(this_covariate_index+1)*self.deconvolution_interval_size]
+
+
+
+
+
+
+
+
+
+
+
 
 
