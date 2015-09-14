@@ -59,26 +59,6 @@ class FIRDeconvolution(object):
 		# internalize event timepoints aligned with names
 		self.events = dict(zip(self.event_names, events))
 
-		# if no covariates, we make a new covariate dictionary specifying only ones.
-		# we will loop over these covariates instead of the event list themselves to create design matrices
-		if covariates == None:
-			self.covariates = dict(zip(self.event_names, [np.ones(len(ev)) for ev in events]))
-		else:
-			self.covariates = covariates
-
-		if durations == None:
-			self.durations = dict(zip(self.event_names, [np.ones(len(ev))/deconvolution_frequency for ev in events]))
-		else:
-			self.durations = durations
-
-		##
-		#	create instance variables that determine calculations
-		##
-
-		nr_events_per_event_type = [len(self.events[e]) for e in self.events]
-		nr_covariates_per_event_type = [len(self.covariates[c]) for c in self.covariates]
-		self.number_of_event_types = len(self.covariates)
-
 		self.sample_frequency = sample_frequency
 		self.deconvolution_interval = deconvolution_interval
 		if deconvolution_frequency is None:
@@ -96,11 +76,24 @@ class FIRDeconvolution(object):
 		self.resampled_signal_size = int(self.signal_duration*self.deconvolution_frequency)
 		self.resampled_signal = sp.signal.resample(self.signal, self.resampled_signal_size, axis = -1)
 
+		# if no covariates, we make a new covariate dictionary specifying only ones.
+		# we will loop over these covariates instead of the event list themselves to create design matrices
+		if covariates == None:
+			self.covariates = dict(zip(self.event_names, [np.ones(len(ev)) for ev in events]))
+		else:
+			self.covariates = covariates
+
+		if durations == None:
+			self.durations = dict(zip(self.event_names, [np.ones(len(ev))/deconvolution_frequency for ev in events]))
+		else:
+			self.durations = durations
+
+		self.number_of_event_types = len(self.covariates)
 		# indices of events in the resampled signal, keeping this as a list instead of an array
 		# at this point we take into account the offset encoded in self.deconvolution_interval[0]
-		self.event_times_indices = dict(zip(self.event_names, [(ev + self.deconvolution_interval[0])*deconvolution_frequency for ev in events]))
+		self.event_times_indices = dict(zip(self.event_names, [(ev + self.deconvolution_interval[0])*self.deconvolution_frequency for ev in events]))
 		# convert the durations to samples/ indices also
-		self.duration_indices = dict(zip(self.event_names, [self.durations[ev]*deconvolution_frequency for ev in self.event_names]))
+		self.duration_indices = dict(zip(self.event_names, [self.durations[ev]*self.deconvolution_frequency for ev in self.event_names]))
 
 	def create_event_regressors(self, event_times_indices, covariates = None, durations = None):
 		"""
