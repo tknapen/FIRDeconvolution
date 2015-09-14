@@ -38,7 +38,7 @@ class FIRDeconvolution(object):
 
 		self.logger = logging.getLogger('FIRDeconvolution')
 		ch = logging.StreamHandler()
-		ch.setLevel(logging.INFO)
+		ch.setLevel(logging.DEBUG)
 		formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 		ch.setFormatter(formatter)
 		self.logger.addHandler(ch)
@@ -98,9 +98,9 @@ class FIRDeconvolution(object):
 
 		# indices of events in the resampled signal, keeping this as a list instead of an array
 		# at this point we take into account the offset encoded in self.deconvolution_interval[0]
-		self.event_times_indices = dict(zip(self.event_names, [(ev + self.deconvolution_interval[0])/deconvolution_frequency for ev in events]))
+		self.event_times_indices = dict(zip(self.event_names, [(ev + self.deconvolution_interval[0])*deconvolution_frequency for ev in events]))
 		# convert the durations to samples/ indices also
-		self.duration_indices = dict(zip(self.event_names, [d*deconvolution_frequency for d in durations]))
+		self.duration_indices = dict(zip(self.event_names, [self.durations[ev]*deconvolution_frequency for ev in self.event_names]))
 
 	def create_event_regressors(self, event_times_indices, covariates = None, durations = None):
 		"""
@@ -124,16 +124,18 @@ class FIRDeconvolution(object):
 
 		# fill up output array by looping over events.
 		for cov, eti, dur in zip(covariates, event_times_indices, durations):
+			valid = True
 			if eti < 0:
 				self.logger.debug('deconv samples are starting before the data starts.')
+				valid = False
 			if eti+self.deconvolution_interval_size > self.resampled_signal_size:
 				self.logger.debug('deconv samples are continuing after the data stops.')
+				valid = False
 			if eti > self.resampled_signal_size:
 				self.logger.debug('event falls outside of the scope of the data.')
+				valid = False
 
-			time_range = np.arange(max(0,eti),min(eti + self.deconvolution_interval_size, self.resampled_signal_size), dtype = int)
-
-			if len(time_range) > 0: # only incorporate sensible events.
+			if valid: # only incorporate sensible events.
 				# calculate the design matrix that belongs to this event.
 				this_event_design_matrix = (np.diag(np.ones(self.deconvolution_interval_size)) * cov)
 				over_durations_dm = np.copy(this_event_design_matrix)
@@ -143,7 +145,7 @@ class FIRDeconvolution(object):
 					# and correct for differences in durations between different regressor types.
 					over_durations_dm /= mean_duration
 				# add the designmatrix for this event to the full design matrix for this type of event.
-				regressors_for_event[-len(time_range):,time_range] += over_durations_dm[-len(time_range):,-len(time_range):]
+				regressors_for_event[:,eti:eti+self.deconvolution_interval_size] += over_durations_dm
 		
 		return regressors_for_event
 
@@ -258,8 +260,10 @@ class FIRDeconvolution(object):
 		"""
 		assert hasattr(self, 'betas'), 'no betas found, please run regression before rsq'
 
-		explained_signal = self.predict_from_design_matrix(self.design_matrix).T
-		self.rsq = 1.0 - np.sum((explained_signal.squeeze() - self.resampled_signal.squeeze())**2) / np.sum(self.resampled_signal.squeeze()**2) 
+		explained_times = self.design_matrix.sum(axis = 0) != 0
+
+		explained_signal = self.predict_from_design_matrix(self.design_matrix)
+		self.rsq = 1.0 - np.sum((explained_signal[:,explained_times] - self.resampled_signal[:,explained_times])**2) / np.sum(self.resampled_signal[:,explained_times].squeeze()**2) 
 		return self.rsq
 
 	def bootstrap_on_residuals(self, nr_repetitions = 1000):

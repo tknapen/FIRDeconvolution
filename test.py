@@ -14,7 +14,7 @@ import scipy as sp
 
 import matplotlib.pyplot as pl
 # %matplotlib inline 
-%pylab osx
+# %pylab osx
 
 import seaborn as sn
 sn.set(style="ticks")
@@ -100,10 +100,10 @@ pl.legend(['events_1', 'events_2', 'signal_1', 'signal_2', 'total signal'])
 pl.axhline(0, lw=0.5, color = 'k')
 
 sn.despine()
-pl.tight_layout()
+# pl.tight_layout()
 
 
-# Up until here, it was just creating data. 
+# Up until now, we just created data. 
 # Now, we'll use the actual deconvolution package.
 
 # first, we initialize the object
@@ -154,13 +154,6 @@ pl.plot(np.linspace(0,plot_time, int(plot_time * fd.deconvolution_frequency/fd.s
 pl.legend(['signal','explained'])
 sn.despine()
 # pl.tight_layout()
-
-
-
-
-
-
-
 
 
 
@@ -227,29 +220,3 @@ sn.despine()
 
 
 
-
-
-
-
-fd.bootstrap_on_residuals(nr_repetitions=1000)
-
-f = pl.figure(figsize = (10,3.5))
-s = f.add_subplot(111)
-s.set_title('FIR responses, with bootstrapped standard deviations')
-for dec in fd.betas_per_event_type.squeeze():
-    pl.plot(fd.deconvolution_interval_timepoints, dec)
-pl.legend(fd.covariates.keys())
-
-for i in range(fd.bootstrap_betas_per_event_type.shape[0]):
-    mb = fd.bootstrap_betas_per_event_type[i].mean(axis = -1)
-    sb = fd.bootstrap_betas_per_event_type[i].std(axis = -1)
-   
-    pl.plot(fd.deconvolution_interval_timepoints, mb, ['b', 'g'][i])
-    pl.fill_between(fd.deconvolution_interval_timepoints, 
-                    mb - sb, 
-                    mb + sb,
-                    color = ['b', 'g'][i], alpha = 0.3)
-# fd.covariates, being a dictionary, cannot be assumed to maintain the event order. 
-# working on a fix here....
-
-sn.despine()
