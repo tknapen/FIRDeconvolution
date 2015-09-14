@@ -1,5 +1,3 @@
-
-
 #!/usr/bin/env python
 # encoding: utf-8
 """
@@ -20,7 +18,7 @@ import matplotlib.pyplot as pl
 
 import statsmodels.api as sm
 import numpy.linalg as LA
-
+from sklearn import linear_model
 
 from IPython import embed as shell
 
@@ -28,15 +26,15 @@ from IPython import embed as shell
 class FIRDeconvolution(object): 
 	"""Instances of FIRDeconvolutionOperator can be used to perform FIR fitting on time-courses."""
 
-	def __init__(self, signal, events, event_names = [], covariates = None, sample_frequency = 1.0, deconvolution_interval = [-0.5, 5], deconvolution_frequency = None):
+	def __init__(self, signal, events, event_names = [], covariates = None, durations = None, sample_frequency = 1.0, deconvolution_interval = [-0.5, 5], deconvolution_frequency = None):
 		"""
 		FIRDeconvolution takes a signal (signals X nr samples), sampled at sample_frequency in Hz, and deconvolves this signal using least-squares FIR fitting. 
 		The resulting FIR curves are sampled at deconvolution_frequency in Hz, for the interval deconvolution_interval in [start, end] seconds.
 		Event occurrence times are given in seconds.
 		covariates is a dictionary, with keys starting with the event they should be 'attached' to, followed by a _ sign and further name. 
 		The values of the covariate dictionary are numpy arrays with the same length as the original events.
+		The same holds for durations, which are an equal-shape numpy array also. Durations must be small relative to the deconvolution interval length, and given in seconds.
 		"""
-
 
 		self.logger = logging.getLogger('FIRDeconvolution')
 		ch = logging.StreamHandler()
@@ -51,26 +49,27 @@ class FIRDeconvolution(object):
 		if len(self.signal.shape) == 1:
 			self.signal = self.signal[np.newaxis, :]
 
-		self.events = events 
+		# construct names for each of the event types
 		if event_names == []:
-			self.event_names = [str(i) for i in np.arange(self.events.shape[0])] 
+			self.event_names = [str(i) for i in np.arange(len(events))] 
 		else:
 			self.event_names = event_names
-		assert len(self.event_names) == len(self.events), \
-					'number of event names (%i, %s) does not align with number of event definitions (%i)' %(len(self.event_names), self.event_names, len(self.events))
-
-		self.events = {}
-		for ev, evn in zip(events, self.event_names):
-			self.events.update({evn: ev})
+		assert len(self.event_names) == len(events), \
+					'number of event names (%i, %s) does not align with number of event definitions (%i)' %(len(self.event_names), self.event_names, len(events))
+		# internalize event timepoints aligned with names
+		self.events = dict(zip(self.event_names, events))
 
 		# if no covariates, we make a new covariate dictionary specifying only ones.
 		# we will loop over these covariates instead of the event list themselves to create design matrices
 		if covariates == None:
-			self.covariates = {}
-			for ev, evn in zip(self.events, self.event_names):
-				self.covariates.update({ evn: np.ones(len(self.events[ev])) })
+			self.covariates = dict(zip(self.event_names, [np.ones(len(ev)) for ev in events]))
 		else:
 			self.covariates = covariates
+
+		if durations == None:
+			self.durations = dict(zip(self.event_names, [np.ones(len(ev))/deconvolution_frequency for ev in events]))
+		else:
+			self.durations = durations
 
 		##
 		#	create instance variables that determine calculations
@@ -89,7 +88,7 @@ class FIRDeconvolution(object):
 
 		self.resampling_factor = self.sample_frequency/self.deconvolution_frequency		
 		self.deconvolution_interval_size = (self.deconvolution_interval[1] - self.deconvolution_interval[0]) * self.deconvolution_frequency
-		assert round(self.deconvolution_interval_size) == self.deconvolution_interval_size, 'self.sample_interval_size should be integer. I don\'t know why, but it\'s neater.'
+		assert round(self.deconvolution_interval_size) == self.deconvolution_interval_size, 'self.deconvolution_interval_size should be integer. I don\'t know why, but it\'s neater.'
 		self.deconvolution_interval_timepoints = np.linspace(self.deconvolution_interval[0],self.deconvolution_interval[1],self.deconvolution_interval_size)
 
 		# duration of signal in seconds and at deconvolution frequency
@@ -99,41 +98,52 @@ class FIRDeconvolution(object):
 
 		# indices of events in the resampled signal, keeping this as a list instead of an array
 		# at this point we take into account the offset encoded in self.deconvolution_interval[0]
-		self.event_times_indices = {}
-		for ev in self.events:
-			self.event_times_indices.update({ev: np.array((self.events[ev] + self.deconvolution_interval[0]) * self.deconvolution_frequency, dtype = np.int)})
+		self.event_times_indices = dict(zip(self.event_names, [(ev + self.deconvolution_interval[0])/deconvolution_frequency for ev in events]))
+		# convert the durations to samples/ indices also
+		self.duration_indices = dict(zip(self.event_names, [d*deconvolution_frequency for d in durations]))
 
-	def create_event_regressors(self, event_times_indices, covariates = None):
+	def create_event_regressors(self, event_times_indices, covariates = None, durations = None):
 		"""
 		create_event_regressors takes the index of the event for which to create the regressors. 
-		it may or may not be supplied with a set of covariates for these events.
+		it may or may not be supplied with a set of covariates and durations for these events.
 		"""
 
 		# check covariates
 		if covariates is None:
-			covariates = np.ones(self.event_times_indices)
+			covariates = np.ones(self.event_times_indices.shape)
+
+		# check/create durations, convert from seconds to samples time, and compute mean duration for this event type.
+		if durations is None:
+			durations = np.ones(self.event_times_indices.shape)
+		else:
+			durations = np.round(durations).astype(int)
+		mean_duration = np.mean(durations)
 
 		# set up output array
 		regressors_for_event = np.zeros((self.deconvolution_interval_size, self.resampled_signal_size))
 
-		# fill up output array
-		for cov, eti in zip(covariates, event_times_indices):
+		# fill up output array by looping over events.
+		for cov, eti, dur in zip(covariates, event_times_indices, durations):
 			if eti < 0:
 				self.logger.debug('deconv samples are starting before the data starts.')
 			if eti+self.deconvolution_interval_size > self.resampled_signal_size:
 				self.logger.debug('deconv samples are continuing after the data stops.')
 			if eti > self.resampled_signal_size:
 				self.logger.debug('event falls outside of the scope of the data.')
-			# these needn't be assertions
-			# assert eti > 0, \
-			# 		'deconv samples are starting before the data ends.'
-			# assert eti+self.deconvolution_interval_size < self.resampled_signal_size, \
-			# 		'deconv samples are continuing after the data stops.'
-			# assert eti < self.resampled_signal_size, \
-			# 		'event falls outside of the scope of the data.'
-			time_range = np.arange(max(0,eti),min(eti+self.deconvolution_interval_size, self.resampled_signal_size), dtype = int)
+
+			time_range = np.arange(max(0,eti),min(eti + self.deconvolution_interval_size, self.resampled_signal_size), dtype = int)
+
 			if len(time_range) > 0: # only incorporate sensible events.
-				regressors_for_event[-len(time_range):,time_range] += (np.diag(np.ones(self.deconvolution_interval_size)) * cov)[-len(time_range):,-len(time_range):]
+				# calculate the design matrix that belongs to this event.
+				this_event_design_matrix = (np.diag(np.ones(self.deconvolution_interval_size)) * cov)
+				over_durations_dm = np.copy(this_event_design_matrix)
+				if dur > 1:	# if this event has a non-unity duration, duplicate the stick regressors in the time direction
+					for d in np.arange(1,dur):
+						over_durations_dm[d:] += this_event_design_matrix[:-d]
+					# and correct for differences in durations between different regressor types.
+					over_durations_dm /= mean_duration
+				# add the designmatrix for this event to the full design matrix for this type of event.
+				regressors_for_event[-len(time_range):,time_range] += over_durations_dm[-len(time_range):,-len(time_range):]
 		
 		return regressors_for_event
 
@@ -142,18 +152,20 @@ class FIRDeconvolution(object):
 		create_design_matrix calls create_event_regressors for each of the covariates in the self.covariates dict. 
 		self.designmatrix is created and is shaped (nr_regressors, self.resampled_signal.shape[-1])
 		"""
-
 		self.design_matrix = np.zeros((self.number_of_event_types*self.deconvolution_interval_size, self.resampled_signal_size))
 
 		for i, covariate in enumerate(self.covariates.keys()):
 			# document the creation of the designmatrix step by step
 			self.logger.debug('creating regressor for ' + covariate)
 			indices = np.arange(i*self.deconvolution_interval_size,(i+1)*self.deconvolution_interval_size, dtype = int)
+			# here, we implement the dot-separated encoding of events and covariates
 			if len(covariate.split('.')) > 0:
 				which_event_time_indices = covariate.split('.')[0]
 			else:
 				which_event_time_indices = covariate
-			self.design_matrix[indices] = self.create_event_regressors(self.event_times_indices[which_event_time_indices], self.covariates[covariate])
+			self.design_matrix[indices] = self.create_event_regressors(	self.event_times_indices[which_event_time_indices], 
+																		self.covariates[covariate], 
+																		self.durations[which_event_time_indices])
 
 		# temporal demean, as we expect the data to be.
 		self.design_matrix = (self.design_matrix.T - self.design_matrix.mean(axis = -1)).T
@@ -185,8 +197,6 @@ class FIRDeconvolution(object):
 		elif method is 'sm_ols':
 			assert self.resampled_signal.shape[0] == 1, \
 					'signal input into statsmodels OLS cannot contain multiple signals at once, present shape %s' % str(self.resampled_signal.shape)
-			# my_model = self.design_matrix.copy().T
-			# my_model = sm.add_constant(my_model)
 			model = sm.OLS(np.squeeze(self.resampled_signal),self.design_matrix.T)
 			results = model.fit()
 			# make betas and residuals that are compatible with the LA.lstsq type.
@@ -195,12 +205,28 @@ class FIRDeconvolution(object):
 
 		self.logger.debug('performed %s regression on %s design_matrix and %s signal' % (method, str(self.design_matrix.shape), str(self.resampled_signal.shape)))
 
+	def ridge_regress(self, cv = 20, alphas = None ):
+		"""
+		perform ridge regression on the designmatrix.
+		for this, we use sklearn's RidgeCV functionality.
+		the cv argument inherits the RidgeCV cv argument's functionality.
+		alphas, too.
+		"""
+		if alphas == None:
+			alphas = np.logspace(7, 0, 20)
+		self.rcv = linear_model.RidgeCV(alphas=alphas, 
+				fit_intercept=False, 
+				cv=cv) 
+		self.rcv.fit(self.design_matrix.T, self.resampled_signal.T)
+
+		self.betas = self.rcv.coef_
+		self.residuals = self.resampled_signal - self.rcv.predict(self.design_matrix.T)
+
 	def betas_for_cov(self, covariate = '0'):
 		"""
 		betas_for_cov returns the betas associated with a specific covariate.
 		covariate is specified by name.
 		"""
-
 		# find the index in the designmatrix of the current covariate
 		this_covariate_index = self.covariates.keys().index(covariate)
 		return self.betas[this_covariate_index*self.deconvolution_interval_size:(this_covariate_index+1)*self.deconvolution_interval_size]
@@ -210,7 +236,6 @@ class FIRDeconvolution(object):
 		betas_for_events creates an internal self.betas_per_event_type array, of (nr_covariates x self.devonvolution_interval_size), 
 		which holds the outcome betas per event type
 		"""
-
 		self.betas_per_event_type = np.zeros((len(self.covariates), self.deconvolution_interval_size, self.resampled_signal.shape[0]))
 		for i, covariate in enumerate(self.covariates.keys()):
 			self.betas_per_event_type[i] = self.betas_for_cov(covariate)
@@ -244,6 +269,8 @@ class FIRDeconvolution(object):
 		increase too much. This uses the lstsq backend regression for fast fitting across nr_repetitions channels.
 		Please note that shuffling the residuals may change the autocorrelation of the bootstrap samples 
 		relative to that of the original data and that may reduce validity.
+
+		reference: https://en.wikipedia.org/wiki/Bootstrapping_(statistics)#Resampling_residuals
 		"""
 		assert self.resampled_signal.shape[0] == 1, \
 					'signal input into bootstrap_on_residuals cannot contain signals from multiple channels at once, present shape %s' % str(self.resampled_signal.shape)
