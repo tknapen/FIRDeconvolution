@@ -24,8 +24,7 @@ class FIRDeconvolution(object):
 	"""Instances of FIRDeconvolutionOperator can be used to perform FIR fitting on time-courses."""
 
 	def __init__(self, signal, events, event_names = [], covariates = None, durations = None, sample_frequency = 1.0, deconvolution_interval = [-0.5, 5], deconvolution_frequency = None):
-		"""
-		FIRDeconvolution takes a signal (signals x nr_samples), sampled at sample_frequency in Hz, and deconvolves this signal using least-squares FIR fitting. 
+		"""FIRDeconvolution takes a signal (signals x nr_samples), sampled at sample_frequency in Hz, and deconvolves this signal using least-squares FIR fitting. 
 		The resulting FIR curves are sampled at deconvolution_frequency in Hz, for the interval deconvolution_interval in [start, end] seconds.
 		Event occurrence times and durations are given in seconds.
 		covariates is a dictionary, with keys starting with the event they should be 'attached' to, followed by a . and further name. 

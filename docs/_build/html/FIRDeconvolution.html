@@ -1,0 +1,273 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>FIRDeconvolution Package &mdash; FIRDeconvolution 0.1.a documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="FIRDeconvolution 0.1.a documentation" href="index.html"/>
+        <link rel="prev" title="Welcome to FIRDeconvolution’s documentation!" href="index.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+
+        
+          <a href="index.html" class="icon icon-home"> FIRDeconvolution
+        
+
+        
+        </a>
+
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+        
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href=""><code class="docutils literal"><span class="pre">FIRDeconvolution</span></code> Package</a></li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">FIRDeconvolution</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li><code class="docutils literal"><span class="pre">FIRDeconvolution</span></code> Package</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/FIRDeconvolution.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <div class="section" id="firdeconvolution-package">
+<h1><a class="reference internal" href="#module-FIRDeconvolution" title="FIRDeconvolution"><code class="xref py py-mod docutils literal"><span class="pre">FIRDeconvolution</span></code></a> Package<a class="headerlink" href="#firdeconvolution-package" title="Permalink to this headline">¶</a></h1>
+<span class="target" id="module-FIRDeconvolution"></span><p>FIRDeconvolution is a python class that performs finite impulse response fitting on time series data, in order to estimate event-related signals.</p>
+<dl class="class">
+<dt id="FIRDeconvolution.FIRDeconvolution">
+<em class="property">class </em><code class="descclassname">FIRDeconvolution.</code><code class="descname">FIRDeconvolution</code><span class="sig-paren">(</span><em>signal, events, event_names=[], covariates=None, durations=None, sample_frequency=1.0, deconvolution_interval=[-0.5, 5], deconvolution_frequency=None</em><span class="sig-paren">)</span><a class="headerlink" href="#FIRDeconvolution.FIRDeconvolution" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Instances of FIRDeconvolutionOperator can be used to perform FIR fitting on time-courses.</p>
+<p>FIRDeconvolution takes a signal (signals x nr_samples), sampled at sample_frequency in Hz, and deconvolves this signal using least-squares FIR fitting. 
+The resulting FIR curves are sampled at deconvolution_frequency in Hz, for the interval deconvolution_interval in [start, end] seconds.
+Event occurrence times and durations are given in seconds.
+covariates is a dictionary, with keys starting with the event they should be &#8216;attached&#8217; to, followed by a . and further name. 
+durations is a dictionary with keys identical to the event names they belong to.
+The values of the covariate and duration dictionaries are numpy arrays with the same length as the original events.</p>
+<dl class="method">
+<dt id="FIRDeconvolution.FIRDeconvolution.add_continuous_regressors_to_design_matrix">
+<code class="descname">add_continuous_regressors_to_design_matrix</code><span class="sig-paren">(</span><em>regressor</em><span class="sig-paren">)</span><a class="headerlink" href="#FIRDeconvolution.FIRDeconvolution.add_continuous_regressors_to_design_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>add_continuous_regressors_to_design_matrix expects as input a regressor shaped similarly to the design matrix.
+one uses this addition to the design matrix when one expects the data to contain nuisance factors that aren&#8217;t tied to the moments of specific events. For instance, in fMRI analysis this allows us to add cardiac / respiratory regressors, as well as tissue and head motion timecourses to the designmatrix.
+the shape of the regressor argument is required to be (nr_regressors, self.resampled_signal.shape[-1])</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="FIRDeconvolution.FIRDeconvolution.betas_for_cov">
+<code class="descname">betas_for_cov</code><span class="sig-paren">(</span><em>covariate='0'</em><span class="sig-paren">)</span><a class="headerlink" href="#FIRDeconvolution.FIRDeconvolution.betas_for_cov" title="Permalink to this definition">¶</a></dt>
+<dd><p>betas_for_cov returns the betas (i.e. IRF) associated with a specific covariate.
+covariate is specified by name.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="FIRDeconvolution.FIRDeconvolution.betas_for_events">
+<code class="descname">betas_for_events</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#FIRDeconvolution.FIRDeconvolution.betas_for_events" title="Permalink to this definition">¶</a></dt>
+<dd><p>betas_for_events creates an internal self.betas_per_event_type array, of (nr_covariates x self.devonvolution_interval_size), 
+which holds the outcome betas per event type,in the order generated by self.covariates.keys()</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="FIRDeconvolution.FIRDeconvolution.bootstrap_on_residuals">
+<code class="descname">bootstrap_on_residuals</code><span class="sig-paren">(</span><em>nr_repetitions=1000</em><span class="sig-paren">)</span><a class="headerlink" href="#FIRDeconvolution.FIRDeconvolution.bootstrap_on_residuals" title="Permalink to this definition">¶</a></dt>
+<dd><p>bootstrap_on_residuals bootstraps, for nr_repetitions, by shuffling the residuals. 
+bootstrap_on_residuals should only be used on single-channel data, as otherwise the memory load might 
+increase too much. This uses the lstsq backend regression for fast fitting across nr_repetitions channels.
+Please note that shuffling the residuals may change the autocorrelation of the bootstrap samples 
+relative to that of the original data and that may reduce its validity.</p>
+<p>reference: <a class="reference external" href="https://en.wikipedia.org/wiki/Bootstrapping_(statistics">https://en.wikipedia.org/wiki/Bootstrapping_(statistics</a>)#Resampling_residuals</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="FIRDeconvolution.FIRDeconvolution.calculate_rsq">
+<code class="descname">calculate_rsq</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#FIRDeconvolution.FIRDeconvolution.calculate_rsq" title="Permalink to this definition">¶</a></dt>
+<dd><p>calculate_rsq calculates coefficient of determination, or r-squared. 
+defined here as 1.0 - SS_res / SS_tot.
+rsq is only calculated for those timepoints in the data for which the design matrix is non-zero</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="FIRDeconvolution.FIRDeconvolution.create_design_matrix">
+<code class="descname">create_design_matrix</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#FIRDeconvolution.FIRDeconvolution.create_design_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>create_design_matrix calls create_event_regressors for each of the covariates in the self.covariates dict. 
+self.designmatrix is created and is shaped (nr_regressors, self.resampled_signal.shape[-1])</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="FIRDeconvolution.FIRDeconvolution.create_event_regressors">
+<code class="descname">create_event_regressors</code><span class="sig-paren">(</span><em>event_times_indices</em>, <em>covariates=None</em>, <em>durations=None</em><span class="sig-paren">)</span><a class="headerlink" href="#FIRDeconvolution.FIRDeconvolution.create_event_regressors" title="Permalink to this definition">¶</a></dt>
+<dd><p>create_event_regressors takes the index of the event for which to create the regressors. 
+it may or may not be supplied with a set of covariates and durations for these events.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="FIRDeconvolution.FIRDeconvolution.predict_from_design_matrix">
+<code class="descname">predict_from_design_matrix</code><span class="sig-paren">(</span><em>design_matrix</em><span class="sig-paren">)</span><a class="headerlink" href="#FIRDeconvolution.FIRDeconvolution.predict_from_design_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>predict_from_design_matrix takes a design matrix (timepoints, betas.shape), 
+and returns the predicted signal given this design matrix.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="FIRDeconvolution.FIRDeconvolution.regress">
+<code class="descname">regress</code><span class="sig-paren">(</span><em>method='lstsq'</em><span class="sig-paren">)</span><a class="headerlink" href="#FIRDeconvolution.FIRDeconvolution.regress" title="Permalink to this definition">¶</a></dt>
+<dd><p>regress performs linear least squares regression of the designmatrix on the data. 
+one may choose a method out of the options &#8216;lstsq&#8217;, &#8216;sm_ols&#8217;.
+this results in the creation of instance variables &#8216;betas&#8217; and &#8216;residuals&#8217;, to be used afterwards.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="FIRDeconvolution.FIRDeconvolution.ridge_regress">
+<code class="descname">ridge_regress</code><span class="sig-paren">(</span><em>cv=20</em>, <em>alphas=None</em><span class="sig-paren">)</span><a class="headerlink" href="#FIRDeconvolution.FIRDeconvolution.ridge_regress" title="Permalink to this definition">¶</a></dt>
+<dd><p>perform ridge regression on the design_matrix.
+for this, we use sklearn&#8217;s RidgeCV functionality.
+the cv argument inherits the RidgeCV cv argument&#8217;s functionality, as does alphas.
+cv determines the amount of folds of the cross-validation, and alphas is a list of values for alpha, the penalization parameter, to be traversed by the procedure.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="index.html" class="btn btn-neutral" title="Welcome to FIRDeconvolution’s documentation!" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, Tomas Knapen.
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.1.a',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
