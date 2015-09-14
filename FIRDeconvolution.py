@@ -1,10 +1,29 @@
 #!/usr/bin/env python
 # encoding: utf-8
 """
-EyeLinkSession.py
+FIRDeconvolution is a python class that performs finite impulse response fitting on time series data, in order to estimate event-related signals.
 
-Created by Tomas Knapen on 2011-04-27.
-Copyright (c) 2011 __MyCompanyName__. All rights reserved.
+The MIT License (MIT)
+
+Copyright (c) 2015 Tomas Knapen
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 """
 from __future__ import division
 
@@ -170,6 +189,8 @@ class FIRDeconvolution(object):
 	def add_continuous_regressors_to_design_matrix(self, regressor):
 		"""
 		add_continuous_regressors_to_design_matrix expects as input a regressor shaped similarly to the design matrix.
+		one uses this addition to the design matrix when one expects the data to contain nuisance factors that aren't tied to the moments of specific events. For instance, in fMRI analysis this allows us to add cardiac / respiratory regressors, as well as tissue and head motion timecourses to the designmatrix.
+		the shape of the regressor argument is required to be (nr_regressors, self.resampled_signal.shape[-1])
 		"""
 		previous_design_matrix_shape = design_matrix.shape
 		if len(regressors.shape) == 1:
@@ -184,6 +205,7 @@ class FIRDeconvolution(object):
 		"""
 		regress performs linear least squares regression of the designmatrix on the data. 
 		one may choose a method out of the options 'lstsq', 'sm_ols'.
+		this results in the creation of instance variables 'betas' and 'residuals', to be used afterwards.
 		"""
 
 		if method is 'lstsq':
@@ -202,10 +224,10 @@ class FIRDeconvolution(object):
 
 	def ridge_regress(self, cv = 20, alphas = None ):
 		"""
-		perform ridge regression on the designmatrix.
+		perform ridge regression on the design_matrix.
 		for this, we use sklearn's RidgeCV functionality.
-		the cv argument inherits the RidgeCV cv argument's functionality.
-		alphas, too.
+		the cv argument inherits the RidgeCV cv argument's functionality, as does alphas.
+		cv determines the amount of folds of the cross-validation, and alphas is a list of values for alpha, the penalization parameter, to be traversed by the procedure.
 		"""
 		if alphas == None:
 			alphas = np.logspace(7, 0, 20)
@@ -249,7 +271,8 @@ class FIRDeconvolution(object):
 	def calculate_rsq(self):
 		"""
 		calculate_rsq calculates coefficient of determination, or r-squared. 
-		defined here as 1.0 - SS_res / SS_tot 
+		defined here as 1.0 - SS_res / SS_tot.
+		rsq is only calculated for those timepoints in the data for which the design matrix is non-zero
 		"""
 		assert hasattr(self, 'betas'), 'no betas found, please run regression before rsq'
 
