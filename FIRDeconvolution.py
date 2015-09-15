@@ -21,15 +21,29 @@ from IPython import embed as shell
 
 
 class FIRDeconvolution(object): 
-	"""Instances of FIRDeconvolutionOperator can be used to perform FIR fitting on time-courses."""
+	"""Instances of FIRDeconvolution can be used to perform FIR fitting on time-courses."""
 
 	def __init__(self, signal, events, event_names = [], covariates = None, durations = None, sample_frequency = 1.0, deconvolution_interval = [-0.5, 5], deconvolution_frequency = None):
-		"""FIRDeconvolution takes a signal (signals x nr_samples), sampled at sample_frequency in Hz, and deconvolves this signal using least-squares FIR fitting. 
-		The resulting FIR curves are sampled at deconvolution_frequency in Hz, for the interval deconvolution_interval in [start, end] seconds.
-		Event occurrence times and durations are given in seconds.
-		covariates is a dictionary, with keys starting with the event they should be 'attached' to, followed by a . and further name. 
-		durations is a dictionary with keys identical to the event names they belong to.
-		The values of the covariate and duration dictionaries are numpy arrays with the same length as the original events.
+		"""FIRDeconvolution takes a signal and events in order to perform FIR fitting of the event-related responses in the signal. Most settings for the analysis are set here. 
+
+			:param signal: input signal. 
+			:type signal: numpy array, shape (nr_signals x nr_samples),
+			:param events: event occurrence times. 
+			:type events: list of numpy arrays, (nr_event_types x nr_events_per_type),
+			:param event_names: event names. 
+			:type events: list of strings, if empty, event names will be string representations of the range(nr_event_types).
+			:param covariates: covariates belonging to event_types. If None, covariates with a value of 1 for all events are created and used internally.
+			:type covariates: dictionary, with keys "event_type.covariate_name" and values numpy arrays, with shape equal to the number of events.
+			:param durations: durations belonging to event_types. If None, durations with a value of 1 sample for all events are created and used internally.
+			:type durations: dictionary, with keys "event_type" and values numpy arrays, with shape equal to the number of events.
+			:param sample_frequency: input signal sampling frequency in Hz, standard value: 1.0.
+			:type sample_frequency: float.
+			:param deconvolution_interval: interval of time around the events for which FIR fitting is performed.
+			:type deconvolution_interval: list: [float, float].
+			:param deconvolution_frequency: effective frequency in Hz at which analysis is performed. If None, identical to the sample_frequency.
+			:type deconvolution_frequency: float.
+		
+			:returns: Nothing, but the created FIRDeconvolution object.
 		"""
 
 		self.logger = logging.getLogger('FIRDeconvolution')
@@ -92,9 +106,15 @@ class FIRDeconvolution(object):
 		self.duration_indices = dict(zip(self.event_names, [self.durations[ev]*self.deconvolution_frequency for ev in self.event_names]))
 
 	def create_event_regressors(self, event_times_indices, covariates = None, durations = None):
-		"""
-		create_event_regressors takes the index of the event for which to create the regressors. 
-		it may or may not be supplied with a set of covariates and durations for these events.
+		"""create_event_regressors creates the part of the design matrix corresponding to one event type. 
+
+			:param event_times_indices: indices in the resampled data, on which the events occurred.
+			:type event_times_indices: numpy array, with shape equal to the number of events.
+			:param covariates: covariates belonging to this event type. If None, covariates with a value of 1 for all events are created and used internally.
+			:type covariates: numpy array, with shape equal to the number of events.
+			:param durations: durations belonging to this event type. If None, durations with a value of 1 sample for all events are created and used internally.
+			:type durations: numpy array, with shape equal to the number of events.
+			:returns: This event type's part of the design matrix.
 		"""
 
 		# check covariates
@@ -139,9 +159,7 @@ class FIRDeconvolution(object):
 		return regressors_for_event
 
 	def create_design_matrix(self):
-		"""
-		create_design_matrix calls create_event_regressors for each of the covariates in the self.covariates dict. 
-		self.designmatrix is created and is shaped (nr_regressors, self.resampled_signal.shape[-1])
+		"""create_design_matrix calls create_event_regressors for each of the covariates in the self.covariates dict. self.designmatrix is created and is shaped (nr_regressors, self.resampled_signal.shape[-1])
 		"""
 		self.design_matrix = np.zeros((self.number_of_event_types*self.deconvolution_interval_size, self.resampled_signal_size))
 
@@ -164,10 +182,10 @@ class FIRDeconvolution(object):
 		self.logger.debug('created %s design_matrix' % (str(self.design_matrix.shape)))
 
 	def add_continuous_regressors_to_design_matrix(self, regressor):
-		"""
-		add_continuous_regressors_to_design_matrix expects as input a regressor shaped similarly to the design matrix.
-		one uses this addition to the design matrix when one expects the data to contain nuisance factors that aren't tied to the moments of specific events. For instance, in fMRI analysis this allows us to add cardiac / respiratory regressors, as well as tissue and head motion timecourses to the designmatrix.
-		the shape of the regressor argument is required to be (nr_regressors, self.resampled_signal.shape[-1])
+		"""add_continuous_regressors_to_design_matrix appends continuously sampled regressors to the existing design matrix. One uses this addition to the design matrix when one expects the data to contain nuisance factors that aren't tied to the moments of specific events. For instance, in fMRI analysis this allows us to add cardiac / respiratory regressors, as well as tissue and head motion timecourses to the designmatrix.
+		
+			:param regressor: the signal to be appended to the design matrix.
+			:type regressor: numpy array, with shape equal to (nr_regressors, self.resampled_signal.shape[-1])
 		"""
 		previous_design_matrix_shape = design_matrix.shape
 		if len(regressors.shape) == 1:
@@ -179,10 +197,11 @@ class FIRDeconvolution(object):
 		self.logger.debug('added %s continuous regressors to %s design_matrix, shape now %s' % (str(regressors.shape), str(previous_design_matrix_shape), str(design_matrix.shape)))
 
 	def regress(self, method = 'lstsq'):
-		"""
-		regress performs linear least squares regression of the designmatrix on the data. 
-		one may choose a method out of the options 'lstsq', 'sm_ols'.
-		this results in the creation of instance variables 'betas' and 'residuals', to be used afterwards.
+		"""regress performs linear least squares regression of the designmatrix on the data. 
+
+			:param method: method, or backend to be used for the regression analysis.
+			:type method: string, one of ['lstsq', 'sm_ols']
+			:returns: instance variables 'betas' (nr_betas x nr_signals) and 'residuals' (nr_signals x nr_samples) are created.
 		"""
 
 		if method is 'lstsq':
@@ -200,11 +219,13 @@ class FIRDeconvolution(object):
 		self.logger.debug('performed %s regression on %s design_matrix and %s signal' % (method, str(self.design_matrix.shape), str(self.resampled_signal.shape)))
 
 	def ridge_regress(self, cv = 20, alphas = None ):
-		"""
-		perform ridge regression on the design_matrix.
-		for this, we use sklearn's RidgeCV functionality.
-		the cv argument inherits the RidgeCV cv argument's functionality, as does alphas.
-		cv determines the amount of folds of the cross-validation, and alphas is a list of values for alpha, the penalization parameter, to be traversed by the procedure.
+		"""perform k-folds cross-validated ridge regression on the design_matrix. To be used when the design matrix contains very collinear regressors. For cross-validation and ridge fitting, we use sklearn's RidgeCV functionality. Note: intercept is not fit, and data are not prenormalized. 
+
+			:param cv: cross-validated folds, inherits RidgeCV cv argument's functionality.
+			:type cv: int, standard = 20
+			:param alphas: values of penalization parameter to be traversed by the procedure, inherits RidgeCV cv argument's functionality. Standard value, when parameter is None, is np.logspace(7, 0, 20)
+			:type alphas: numpy array, from >0 to 1. 
+			:returns: instance variables 'betas' (nr_betas x nr_signals) and 'residuals' (nr_signals x nr_samples) are created.
 		"""
 		if alphas == None:
 			alphas = np.logspace(7, 0, 20)
@@ -216,18 +237,20 @@ class FIRDeconvolution(object):
 		self.betas = self.rcv.coef_
 		self.residuals = self.resampled_signal - self.rcv.predict(self.design_matrix.T)
 
+		self.logger.debug('performed %s regression on %s design_matrix and %s signal' % (method, str(self.design_matrix.shape), str(self.resampled_signal.shape)))
+
 	def betas_for_cov(self, covariate = '0'):
-		"""
-		betas_for_cov returns the betas (i.e. IRF) associated with a specific covariate.
-		covariate is specified by name.
+		"""betas_for_cov returns the beta values (i.e. IRF) associated with a specific covariate.
+
+			:param covariate: name of covariate.
+			:type covariate: string
 		"""
 		# find the index in the designmatrix of the current covariate
 		this_covariate_index = self.covariates.keys().index(covariate)
 		return self.betas[this_covariate_index*self.deconvolution_interval_size:(this_covariate_index+1)*self.deconvolution_interval_size]
 
 	def betas_for_events(self):
-		"""
-		betas_for_events creates an internal self.betas_per_event_type array, of (nr_covariates x self.devonvolution_interval_size), 
+		"""betas_for_events creates an internal self.betas_per_event_type array, of (nr_covariates x self.devonvolution_interval_size), 
 		which holds the outcome betas per event type,in the order generated by self.covariates.keys()
 		"""
 		self.betas_per_event_type = np.zeros((len(self.covariates), self.deconvolution_interval_size, self.resampled_signal.shape[0]))
@@ -235,9 +258,12 @@ class FIRDeconvolution(object):
 			self.betas_per_event_type[i] = self.betas_for_cov(covariate)
 
 	def predict_from_design_matrix(self, design_matrix):
-		"""
-		predict_from_design_matrix takes a design matrix (timepoints, betas.shape), 
-		and returns the predicted signal given this design matrix.
+		"""predict_from_design_matrix predicts signals given a design matrix.
+
+			:param design_matrix: design matrix from which to predict a signal.
+			:type design_matrix: numpy array, (nr_samples x betas.shape)
+			:returns: predicted signal(s) 
+			:rtype: numpy array (nr_signals x nr_samples)
 		"""
 		# check if we have already run the regression - which is necessary
 		assert hasattr(self, 'betas'), 'no betas found, please run regression before prediction'
@@ -246,10 +272,7 @@ class FIRDeconvolution(object):
 		return np.dot(self.betas.T, design_matrix)
 
 	def calculate_rsq(self):
-		"""
-		calculate_rsq calculates coefficient of determination, or r-squared. 
-		defined here as 1.0 - SS_res / SS_tot.
-		rsq is only calculated for those timepoints in the data for which the design matrix is non-zero
+		"""calculate_rsq calculates coefficient of determination, or r-squared, defined here as 1.0 - SS_res / SS_tot. rsq is only calculated for those timepoints in the data for which the design matrix is non-zero.
 		"""
 		assert hasattr(self, 'betas'), 'no betas found, please run regression before rsq'
 
@@ -260,14 +283,11 @@ class FIRDeconvolution(object):
 		return self.rsq
 
 	def bootstrap_on_residuals(self, nr_repetitions = 1000):
-		"""
-		bootstrap_on_residuals bootstraps, for nr_repetitions, by shuffling the residuals. 
-		bootstrap_on_residuals should only be used on single-channel data, as otherwise the memory load might 
-		increase too much. This uses the lstsq backend regression for fast fitting across nr_repetitions channels.
-		Please note that shuffling the residuals may change the autocorrelation of the bootstrap samples 
-		relative to that of the original data and that may reduce its validity.
+		"""bootstrap_on_residuals bootstraps, by shuffling the residuals. bootstrap_on_residuals should only be used on single-channel data, as otherwise the memory load might increase too much. This uses the lstsq backend regression for a single-pass fit across repetitions. Please note that shuffling the residuals may change the autocorrelation of the bootstrap samples relative to that of the original data and that may reduce its validity. Reference: https://en.wikipedia.org/wiki/Bootstrapping_(statistics)#Resampling_residuals
 
-		reference: https://en.wikipedia.org/wiki/Bootstrapping_(statistics)#Resampling_residuals
+			:param nr_repetitions: number of repetitions for the bootstrap.
+			:type nr_repetitions: int.
+
 		"""
 		assert self.resampled_signal.shape[0] == 1, \
 					'signal input into bootstrap_on_residuals cannot contain signals from multiple channels at once, present shape %s' % str(self.resampled_signal.shape)
