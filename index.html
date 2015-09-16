@@ -1,0 +1,63 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Firdeconvolution by tknapen</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/github-light.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>Firdeconvolution</h1>
+        <p>Python class that performs finite impulse response fitting on time series data. </p>
+
+        <p class="view"><a href="https://github.com/tknapen/FIRDeconvolution">View the Project on GitHub <small>tknapen/FIRDeconvolution</small></a></p>
+
+
+        <ul>
+          <li><a href="https://github.com/tknapen/FIRDeconvolution/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/tknapen/FIRDeconvolution/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/tknapen/FIRDeconvolution">View On <strong>GitHub</strong></a></li>
+        </ul>
+      </header>
+      <section>
+        <h1>
+<a id="firdeconvolution" class="anchor" href="#firdeconvolution" aria-hidden="true"><span class="octicon octicon-link"></span></a>FIRDeconvolution</h1>
+
+<p>FIRDeconvolution is a python class that performs finite impulse response fitting on time series data, in order to estimate event-related signals. </p>
+
+<p>Example use cases are fMRI and pupil size analysis. The package performs the linear least squares analysis using numpy.linalg as a backend, but can switch between different backends, such as statsmodels (which is implemented). For very collinear design matrices ridge regression is implemented through the sklearn RidgeCV function. Bootstrap estimates of error regions are implemented through residual reshuffling. </p>
+
+<p>It is possible to add covariates to the events to estimate not just the impulse response function, but also correlation timecourses with secondary variables. Furthermore, one can add the duration each event should have in the designmatrix, for designs in which the durations of the events vary. </p>
+
+<p>In neuroscience, the inspection of the event-related signals such as those estimated by FIRDeconvolution is essential for a thorough understanding of one's data. Researchers may overlook essential patterns in their data when blindly running GLM analyses without looking at the impulse response shapes. </p>
+
+<p>The test notebook explains how the package can be used for data analysis, by creating toy signals and then using FIRDeconvolution to fit the impulse response functions from the toy data. </p>
+
+<h2>
+<a id="dependencies" class="anchor" href="#dependencies" aria-hidden="true"><span class="octicon octicon-link"></span></a>Dependencies</h2>
+
+<p>numpy, scipy, matplotlib, statsmodels, sklearn</p>
+
+<p>TODO</p>
+
+<ul>
+<li>temporal autocorrelation correction</li>
+</ul>
+      </section>
+      <footer>
+        <p>This project is maintained by <a href="https://github.com/tknapen">tknapen</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
+    </div>
+    <script src="javascripts/scale.fix.js"></script>
+    
+  </body>
+</html>
