@@ -7,7 +7,7 @@ SPHINXBUILD   = sphinx-build
 PAPER		 =
 BUILDDIR	  = build
 
-GH_PAGES_SOURCES = Makefile conf.py help.rst
+GH_PAGES_SOURCES = Makefile conf.py help.rst ../FIRDeconvolution.py
 
 # User-friendly check for sphinx-build
 ifeq ($(shell which $(SPHINXBUILD) >/dev/null 2>&1; echo $$?), 1)
