@@ -5,6 +5,10 @@ FIRDeconvolution is a python class that performs finite impulse response fitting
 in order to estimate event-related signals. These signals can come from any source, but the most likely
 source in our experience is some sort of physiological signal such as fMRI voxels, 
 galvanic skin response, (GSR) or pupil size recordings. 
+
+The repo for FIRDeconvolution is at <a href="https://github.com/tknapen/FIRDeconvolution"><strong>https://github.com/tknapen/FIRDeconvolution</strong></a>, 
+and the GitHub FIRDeconvolution website is located at <a href="http://tknapen.github.io/FIRDeconvolution/index.html"><strong>http://tknapen.github.io/FIRDeconvolution/</strong></a>.
+
 """
 from __future__ import division
 
