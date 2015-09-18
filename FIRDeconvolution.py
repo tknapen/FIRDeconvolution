@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 # encoding: utf-8
 """
-FIRDeconvolution is a python class that performs finite impulse response fitting on time series data, in order to estimate event-related signals.
+FIRDeconvolution is a python class that performs finite impulse response fitting on time series data, 
+in order to estimate event-related signals. These signals can come from any source, but the most likely
+source in our experience is some sort of physiological signal such as fMRI voxels, 
+galvanic skin response, (GSR) or pupil size recordings. 
 """
 from __future__ import division
 
@@ -21,27 +24,31 @@ from IPython import embed as shell
 
 
 class FIRDeconvolution(object): 
-	"""Instances of FIRDeconvolution can be used to perform FIR fitting on time-courses."""
+	"""Instances of FIRDeconvolution can be used to perform FIR fitting on time-courses. 
+	Since many of the computation's parameters are set in the constructor, 
+	it is likely easiest to create new instances for each separate analysis you run.
+	"""
 
 	def __init__(self, signal, events, event_names = [], covariates = None, durations = None, sample_frequency = 1.0, deconvolution_interval = [-0.5, 5], deconvolution_frequency = None):
-		"""FIRDeconvolution takes a signal and events in order to perform FIR fitting of the event-related responses in the signal. Most settings for the analysis are set here. 
+		"""FIRDeconvolution takes a signal and events in order to perform FIR fitting of the event-related responses in the signal. 
+		Most settings for the analysis are set here. 
 
 			:param signal: input signal. 
-			:type signal: numpy array, shape (nr_signals x nr_samples),
+			:type signal: numpy array, (nr_signals x nr_samples)
 			:param events: event occurrence times. 
-			:type events: list of numpy arrays, (nr_event_types x nr_events_per_type),
+			:type events: list of numpy arrays, (nr_event_types x nr_events_per_type)
 			:param event_names: event names. 
-			:type events: list of strings, if empty, event names will be string representations of the range(nr_event_types).
+			:type events: list of strings, if empty, event names will be string representations of range(nr_event_types)
 			:param covariates: covariates belonging to event_types. If None, covariates with a value of 1 for all events are created and used internally.
-			:type covariates: dictionary, with keys "event_type.covariate_name" and values numpy arrays, with shape equal to the number of events.
+			:type covariates: dictionary, with keys "event_type.covariate_name" and values numpy arrays, (nr_events)
 			:param durations: durations belonging to event_types. If None, durations with a value of 1 sample for all events are created and used internally.
-			:type durations: dictionary, with keys "event_type" and values numpy arrays, with shape equal to the number of events.
-			:param sample_frequency: input signal sampling frequency in Hz, standard value: 1.0.
-			:type sample_frequency: float.
+			:type durations: dictionary, with keys "event_type" and values numpy arrays, (nr_events)
+			:param sample_frequency: input signal sampling frequency in Hz, standard value: 1.0
+			:type sample_frequency: float
 			:param deconvolution_interval: interval of time around the events for which FIR fitting is performed.
-			:type deconvolution_interval: list: [float, float].
+			:type deconvolution_interval: list: [float, float]
 			:param deconvolution_frequency: effective frequency in Hz at which analysis is performed. If None, identical to the sample_frequency.
-			:type deconvolution_frequency: float.
+			:type deconvolution_frequency: float
 		
 			:returns: Nothing, but the created FIRDeconvolution object.
 		"""
@@ -109,11 +116,11 @@ class FIRDeconvolution(object):
 		"""create_event_regressors creates the part of the design matrix corresponding to one event type. 
 
 			:param event_times_indices: indices in the resampled data, on which the events occurred.
-			:type event_times_indices: numpy array, with shape equal to the number of events.
+			:type event_times_indices: numpy array, (nr_events)
 			:param covariates: covariates belonging to this event type. If None, covariates with a value of 1 for all events are created and used internally.
-			:type covariates: numpy array, with shape equal to the number of events.
+			:type covariates: numpy array, (nr_events)
 			:param durations: durations belonging to this event type. If None, durations with a value of 1 sample for all events are created and used internally.
-			:type durations: numpy array, with shape equal to the number of events.
+			:type durations: numpy array, (nr_events)
 			:returns: This event type's part of the design matrix.
 		"""
 
@@ -286,7 +293,7 @@ class FIRDeconvolution(object):
 		"""bootstrap_on_residuals bootstraps, by shuffling the residuals. bootstrap_on_residuals should only be used on single-channel data, as otherwise the memory load might increase too much. This uses the lstsq backend regression for a single-pass fit across repetitions. Please note that shuffling the residuals may change the autocorrelation of the bootstrap samples relative to that of the original data and that may reduce its validity. Reference: https://en.wikipedia.org/wiki/Bootstrapping_(statistics)#Resampling_residuals
 
 			:param nr_repetitions: number of repetitions for the bootstrap.
-			:type nr_repetitions: int.
+			:type nr_repetitions: int
 
 		"""
 		assert self.resampled_signal.shape[0] == 1, \
