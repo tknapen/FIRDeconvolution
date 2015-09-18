@@ -115,7 +115,212 @@
 </ul>
 </div>
 <div class="section" id="firdeconvolution-package">
-<h2><code class="xref py py-mod docutils literal"><span class="pre">FIRDeconvolution</span></code> Package<a class="headerlink" href="#firdeconvolution-package" title="Permalink to this headline">¶</a></h2>
+<h2><a class="reference internal" href="#module-FIRDeconvolution" title="FIRDeconvolution"><code class="xref py py-mod docutils literal"><span class="pre">FIRDeconvolution</span></code></a> Package<a class="headerlink" href="#firdeconvolution-package" title="Permalink to this headline">¶</a></h2>
+<span class="target" id="module-FIRDeconvolution"></span><p>FIRDeconvolution is a python class that performs finite impulse response fitting on time series data, 
+in order to estimate event-related signals. These signals can come from any source, but the most likely
+source in our experience is some sort of physiological signal such as fMRI voxels, 
+galvanic skin response, (GSR) or pupil size recordings.</p>
+<dl class="class">
+<dt id="FIRDeconvolution.FIRDeconvolution">
+<em class="property">class </em><code class="descclassname">FIRDeconvolution.</code><code class="descname">FIRDeconvolution</code><span class="sig-paren">(</span><em>signal, events, event_names=[], covariates=None, durations=None, sample_frequency=1.0, deconvolution_interval=[-0.5, 5], deconvolution_frequency=None</em><span class="sig-paren">)</span><a class="headerlink" href="#FIRDeconvolution.FIRDeconvolution" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Instances of FIRDeconvolution can be used to perform FIR fitting on time-courses. 
+Since many of the computation&#8217;s parameters are set in the constructor, 
+it is likely easiest to create new instances for each separate analysis you run.</p>
+<p>FIRDeconvolution takes a signal and events in order to perform FIR fitting of the event-related responses in the signal. 
+Most settings for the analysis are set here.</p>
+<blockquote>
+<div><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">param signal:</th><td class="field-body">input signal.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">type signal:</th><td class="field-body">numpy array, (nr_signals x nr_samples)</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">param events:</th><td class="field-body">event occurrence times.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">type events:</th><td class="field-body">list of numpy arrays, (nr_event_types x nr_events_per_type)</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">param event_names:</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body">event names.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">type events:</th><td class="field-body">list of strings, if empty, event names will be string representations of range(nr_event_types)</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">param covariates:</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body">covariates belonging to event_types. If None, covariates with a value of 1 for all events are created and used internally.</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">type covariates:</th></tr>
+<tr class="field-even field"><td>&nbsp;</td><td class="field-body">dictionary, with keys &#8220;event_type.covariate_name&#8221; and values numpy arrays, (nr_events)</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">param durations:</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body">durations belonging to event_types. If None, durations with a value of 1 sample for all events are created and used internally.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">type durations:</th><td class="field-body">dictionary, with keys &#8220;event_type&#8221; and values numpy arrays, (nr_events)</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">param sample_frequency:</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body">input signal sampling frequency in Hz, standard value: 1.0</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">type sample_frequency:</th></tr>
+<tr class="field-even field"><td>&nbsp;</td><td class="field-body">float</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">param deconvolution_interval:</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body">interval of time around the events for which FIR fitting is performed.</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">type deconvolution_interval:</th></tr>
+<tr class="field-even field"><td>&nbsp;</td><td class="field-body">list: [float, float]</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">param deconvolution_frequency:</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body">effective frequency in Hz at which analysis is performed. If None, identical to the sample_frequency.</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">type deconvolution_frequency:</th></tr>
+<tr class="field-even field"><td>&nbsp;</td><td class="field-body">float</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">returns:</th><td class="field-body">Nothing, but the created FIRDeconvolution object.</td>
+</tr>
+</tbody>
+</table>
+</div></blockquote>
+<dl class="method">
+<dt id="FIRDeconvolution.FIRDeconvolution.add_continuous_regressors_to_design_matrix">
+<code class="descname">add_continuous_regressors_to_design_matrix</code><span class="sig-paren">(</span><em>regressor</em><span class="sig-paren">)</span><a class="headerlink" href="#FIRDeconvolution.FIRDeconvolution.add_continuous_regressors_to_design_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>add_continuous_regressors_to_design_matrix appends continuously sampled regressors to the existing design matrix. One uses this addition to the design matrix when one expects the data to contain nuisance factors that aren&#8217;t tied to the moments of specific events. For instance, in fMRI analysis this allows us to add cardiac / respiratory regressors, as well as tissue and head motion timecourses to the designmatrix.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>regressor</strong> (<em>numpy array, with shape equal to (nr_regressors, self.resampled_signal.shape[-1])</em>) &#8211; the signal to be appended to the design matrix.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="FIRDeconvolution.FIRDeconvolution.betas_for_cov">
+<code class="descname">betas_for_cov</code><span class="sig-paren">(</span><em>covariate='0'</em><span class="sig-paren">)</span><a class="headerlink" href="#FIRDeconvolution.FIRDeconvolution.betas_for_cov" title="Permalink to this definition">¶</a></dt>
+<dd><p>betas_for_cov returns the beta values (i.e. IRF) associated with a specific covariate.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>covariate</strong> (<em>string</em>) &#8211; name of covariate.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="FIRDeconvolution.FIRDeconvolution.betas_for_events">
+<code class="descname">betas_for_events</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#FIRDeconvolution.FIRDeconvolution.betas_for_events" title="Permalink to this definition">¶</a></dt>
+<dd><p>betas_for_events creates an internal self.betas_per_event_type array, of (nr_covariates x self.devonvolution_interval_size), 
+which holds the outcome betas per event type,in the order generated by self.covariates.keys()</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="FIRDeconvolution.FIRDeconvolution.bootstrap_on_residuals">
+<code class="descname">bootstrap_on_residuals</code><span class="sig-paren">(</span><em>nr_repetitions=1000</em><span class="sig-paren">)</span><a class="headerlink" href="#FIRDeconvolution.FIRDeconvolution.bootstrap_on_residuals" title="Permalink to this definition">¶</a></dt>
+<dd><p>bootstrap_on_residuals bootstraps, by shuffling the residuals. bootstrap_on_residuals should only be used on single-channel data, as otherwise the memory load might increase too much. This uses the lstsq backend regression for a single-pass fit across repetitions. Please note that shuffling the residuals may change the autocorrelation of the bootstrap samples relative to that of the original data and that may reduce its validity. Reference: <a class="reference external" href="https://en.wikipedia.org/wiki/Bootstrapping_(statistics">https://en.wikipedia.org/wiki/Bootstrapping_(statistics</a>)#Resampling_residuals</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>nr_repetitions</strong> (<em>int</em>) &#8211; number of repetitions for the bootstrap.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="FIRDeconvolution.FIRDeconvolution.calculate_rsq">
+<code class="descname">calculate_rsq</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#FIRDeconvolution.FIRDeconvolution.calculate_rsq" title="Permalink to this definition">¶</a></dt>
+<dd><p>calculate_rsq calculates coefficient of determination, or r-squared, defined here as 1.0 - SS_res / SS_tot. rsq is only calculated for those timepoints in the data for which the design matrix is non-zero.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="FIRDeconvolution.FIRDeconvolution.create_design_matrix">
+<code class="descname">create_design_matrix</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#FIRDeconvolution.FIRDeconvolution.create_design_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>create_design_matrix calls create_event_regressors for each of the covariates in the self.covariates dict. self.designmatrix is created and is shaped (nr_regressors, self.resampled_signal.shape[-1])</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="FIRDeconvolution.FIRDeconvolution.create_event_regressors">
+<code class="descname">create_event_regressors</code><span class="sig-paren">(</span><em>event_times_indices</em>, <em>covariates=None</em>, <em>durations=None</em><span class="sig-paren">)</span><a class="headerlink" href="#FIRDeconvolution.FIRDeconvolution.create_event_regressors" title="Permalink to this definition">¶</a></dt>
+<dd><p>create_event_regressors creates the part of the design matrix corresponding to one event type.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>event_times_indices</strong> (<em>numpy array, (nr_events)</em>) &#8211; indices in the resampled data, on which the events occurred.</li>
+<li><strong>covariates</strong> (<em>numpy array, (nr_events)</em>) &#8211; covariates belonging to this event type. If None, covariates with a value of 1 for all events are created and used internally.</li>
+<li><strong>durations</strong> (<em>numpy array, (nr_events)</em>) &#8211; durations belonging to this event type. If None, durations with a value of 1 sample for all events are created and used internally.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">This event type&#8217;s part of the design matrix.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="FIRDeconvolution.FIRDeconvolution.predict_from_design_matrix">
+<code class="descname">predict_from_design_matrix</code><span class="sig-paren">(</span><em>design_matrix</em><span class="sig-paren">)</span><a class="headerlink" href="#FIRDeconvolution.FIRDeconvolution.predict_from_design_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>predict_from_design_matrix predicts signals given a design matrix.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>design_matrix</strong> (<em>numpy array, (nr_samples x betas.shape)</em>) &#8211; design matrix from which to predict a signal.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">predicted signal(s)</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">numpy array (nr_signals x nr_samples)</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="FIRDeconvolution.FIRDeconvolution.regress">
+<code class="descname">regress</code><span class="sig-paren">(</span><em>method='lstsq'</em><span class="sig-paren">)</span><a class="headerlink" href="#FIRDeconvolution.FIRDeconvolution.regress" title="Permalink to this definition">¶</a></dt>
+<dd><p>regress performs linear least squares regression of the designmatrix on the data.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>method</strong> (<em>string, one of [&#8216;lstsq&#8217;, &#8216;sm_ols&#8217;]</em>) &#8211; method, or backend to be used for the regression analysis.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">instance variables &#8216;betas&#8217; (nr_betas x nr_signals) and &#8216;residuals&#8217; (nr_signals x nr_samples) are created.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="FIRDeconvolution.FIRDeconvolution.ridge_regress">
+<code class="descname">ridge_regress</code><span class="sig-paren">(</span><em>cv=20</em>, <em>alphas=None</em><span class="sig-paren">)</span><a class="headerlink" href="#FIRDeconvolution.FIRDeconvolution.ridge_regress" title="Permalink to this definition">¶</a></dt>
+<dd><p>perform k-folds cross-validated ridge regression on the design_matrix. To be used when the design matrix contains very collinear regressors. For cross-validation and ridge fitting, we use sklearn&#8217;s RidgeCV functionality. Note: intercept is not fit, and data are not prenormalized.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>cv</strong> (<em>int, standard = 20</em>) &#8211; cross-validated folds, inherits RidgeCV cv argument&#8217;s functionality.</li>
+<li><strong>alphas</strong> (<em>numpy array, from &gt;0 to 1.</em>) &#8211; values of penalization parameter to be traversed by the procedure, inherits RidgeCV cv argument&#8217;s functionality. Standard value, when parameter is None, is np.logspace(7, 0, 20)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">instance variables &#8216;betas&#8217; (nr_betas x nr_signals) and &#8216;residuals&#8217; (nr_signals x nr_samples) are created.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 </div>
 <div class="section" id="indices-and-tables">
