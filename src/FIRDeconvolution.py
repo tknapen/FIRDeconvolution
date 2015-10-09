@@ -18,7 +18,6 @@ import logging
 import math
 import numpy as np
 import scipy as sp
-import matplotlib.pyplot as pl
 
 import statsmodels.api as sm
 import numpy.linalg as LA

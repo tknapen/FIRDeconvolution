@@ -55,7 +55,7 @@ if __name__ == "__main__":
                        'Operating System :: MacOS'],
           platforms='any',
 	      packages=['fir'],
-	      package_dir={'fir': 'src/fir'},
-	      package_data={'fir': ['test/*.ipynb']} #,
+	      package_dir={'fir': 'src'},
+	      package_data={'fir': ['src/test/*.ipynb']} #,
        #    scripts=['bin/fir']
        )
