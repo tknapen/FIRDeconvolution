@@ -110,11 +110,12 @@ class FIRDeconvolution(object):
 			self.durations = durations
 
 		self.number_of_event_types = len(self.covariates)
-		# indices of events in the resampled signal, keeping this as a list instead of an array
-		# at this point we take into account the offset encoded in self.deconvolution_interval[0]
-		self.event_times_indices = dict(zip(self.event_names, [int((ev + self.deconvolution_interval[0])*self.deconvolution_frequency) for ev in events]))
+		# indices of events in the resampled signal, keeping this as a list instead of an array		
+		# at this point we take into account the offset encoded in self.deconvolution_interval[0]		
+		
+		self.event_times_indices = dict(zip(self.event_names, [((ev + self.deconvolution_interval[0])*self.deconvolution_frequency).astype(int) for ev in events]))
 		# convert the durations to samples/ indices also
-		self.duration_indices = dict(zip(self.event_names, [int(self.durations[ev]*self.deconvolution_frequency) for ev in self.event_names]))
+		self.duration_indices = dict(zip(self.event_names, [(self.durations[ev]*self.deconvolution_frequency).astype(int) for ev in self.event_names]))
 
 	def create_event_regressors(self, event_times_indices, covariates = None, durations = None):
 		"""create_event_regressors creates the part of the design matrix corresponding to one event type. 
