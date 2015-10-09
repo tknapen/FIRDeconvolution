@@ -9,7 +9,7 @@ from numpy.distutils.core import setup
 
 # get the version (don't import mne here, so dependencies are not needed)
 version = None
-with open(os.path.join('src', 'fir', '__init__.py'), 'r') as fid:
+with open(os.path.join('src', '__init__.py'), 'r') as fid:
     for line in (line.strip() for line in fid):
         if line.startswith('__version__'):
             version = line.split('=')[1].strip().strip('\'')
