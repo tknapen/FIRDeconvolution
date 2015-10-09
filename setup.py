@@ -9,7 +9,7 @@ from numpy.distutils.core import setup
 
 # get the version (don't import mne here, so dependencies are not needed)
 version = None
-with open(os.path.join('src', '__init__.py'), 'r') as fid:
+with open(os.path.join('src', 'fir', '__init__.py'), 'r') as fid:
     for line in (line.strip() for line in fid):
         if line.startswith('__version__'):
             version = line.split('=')[1].strip().strip('\'')
@@ -30,6 +30,9 @@ DOWNLOAD_URL = 'https://github.com/tknapen/FIRDeconvolution'
 VERSION = version
 
 if __name__ == "__main__":
+    if os.path.exists('MANIFEST'):
+        os.remove('MANIFEST')
+
     setup(name=DISTNAME,
           maintainer=MAINTAINER,
           include_package_data=True,
@@ -51,6 +54,8 @@ if __name__ == "__main__":
                        'Operating System :: Unix',
                        'Operating System :: MacOS'],
           platforms='any',
-          packages=['fir', 'fir.fir',],
-          package_data={'fir': [op.join('test', '*.ipynb'),]},
-          scripts=['bin/fir'])
+	      packages=['fir'],
+	      package_dir={'fir': 'src/fir'},
+	      package_data={'fir': ['test/*.ipynb']} #,
+       #    scripts=['bin/fir']
+       )
