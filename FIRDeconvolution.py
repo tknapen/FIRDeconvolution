@@ -112,9 +112,9 @@ class FIRDeconvolution(object):
 		self.number_of_event_types = len(self.covariates)
 		# indices of events in the resampled signal, keeping this as a list instead of an array
 		# at this point we take into account the offset encoded in self.deconvolution_interval[0]
-		self.event_times_indices = dict(zip(self.event_names, [(ev + self.deconvolution_interval[0])*self.deconvolution_frequency for ev in events]))
+		self.event_times_indices = dict(zip(self.event_names, [int((ev + self.deconvolution_interval[0])*self.deconvolution_frequency) for ev in events]))
 		# convert the durations to samples/ indices also
-		self.duration_indices = dict(zip(self.event_names, [self.durations[ev]*self.deconvolution_frequency for ev in self.event_names]))
+		self.duration_indices = dict(zip(self.event_names, [int(self.durations[ev]*self.deconvolution_frequency) for ev in self.event_names]))
 
 	def create_event_regressors(self, event_times_indices, covariates = None, durations = None):
 		"""create_event_regressors creates the part of the design matrix corresponding to one event type. 
@@ -245,10 +245,10 @@ class FIRDeconvolution(object):
 				cv=cv) 
 		self.rcv.fit(self.design_matrix.T, self.resampled_signal.T)
 
-		self.betas = self.rcv.coef_
+		self.betas = self.rcv.coef_.T
 		self.residuals = self.resampled_signal - self.rcv.predict(self.design_matrix.T)
 
-		self.logger.debug('performed %s regression on %s design_matrix and %s signal' % (method, str(self.design_matrix.shape), str(self.resampled_signal.shape)))
+		self.logger.debug('performed ridge regression on %s design_matrix and %s signal, resulting alpha value is %f' % (str(self.design_matrix.shape), str(self.resampled_signal.shape), self.rcv.alpha_))
 
 	def betas_for_cov(self, covariate = '0'):
 		"""betas_for_cov returns the beta values (i.e. IRF) associated with a specific covariate.
