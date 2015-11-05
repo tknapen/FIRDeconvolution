@@ -280,7 +280,13 @@ class FIRDeconvolution(object):
 		assert hasattr(self, 'betas'), 'no betas found, please run regression before prediction'
 		assert design_matrix.shape[0] == self.betas.shape[0], \
 					'designmatrix needs to have the same number of regressors as the betas already calculated'
-		return np.dot(self.betas.T, design_matrix)
+
+		betas = np.copy(self.betas.T, order="F")
+		f_design_matrix = np.copy(design_matrix, order = "F")
+
+		prediction = np.dot(betas, f_design_matrix)
+
+		return prediction
 
 	def calculate_rsq(self):
 		"""calculate_rsq calculates coefficient of determination, or r-squared, defined here as 1.0 - SS_res / SS_tot. rsq is only calculated for those timepoints in the data for which the design matrix is non-zero.
