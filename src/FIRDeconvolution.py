@@ -281,10 +281,10 @@ class FIRDeconvolution(object):
 		assert design_matrix.shape[0] == self.betas.shape[0], \
 					'designmatrix needs to have the same number of regressors as the betas already calculated'
 
-		betas = np.copy(self.betas.T, order="F")
-		f_design_matrix = np.copy(design_matrix, order = "F")
+		# betas = np.copy(self.betas.T, order="F", dtype = np.float32)
+		# f_design_matrix = np.copy(design_matrix, order = "F", dtype = np.float32)
 
-		prediction = np.dot(betas, f_design_matrix)
+		prediction = np.dot(self.betas.astype(np.float32).T, design_matrix.astype(np.float32))
 
 		return prediction
 
