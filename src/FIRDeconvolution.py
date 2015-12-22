@@ -204,8 +204,8 @@ class FIRDeconvolution(object):
 			regressors = regressors[np.newaxis, :]
 		if regressors.shape[1] != self.resampled_signal.shape[1]:
 			self.logger.warning('additional regressor shape %s does not conform to designmatrix shape %s' % (regressors.shape, self.resampled_signal.shape))
-		# and, an hstack append
-		self.design_matrix = np.hstack((self.design_matrix, regressors))
+		# and, an vstack append
+		self.design_matrix = np.vstack((self.design_matrix, regressors))
 		self.logger.debug('added %s continuous regressors to %s design_matrix, shape now %s' % (str(regressors.shape), str(previous_design_matrix_shape), str(self.design_matrix.shape)))
 
 	def regress(self, method = 'lstsq'):
