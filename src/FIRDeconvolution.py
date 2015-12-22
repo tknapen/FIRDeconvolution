@@ -297,8 +297,8 @@ class FIRDeconvolution(object):
 		explained_times = self.design_matrix.sum(axis = 0) != 0
 
 		explained_signal = self.predict_from_design_matrix(self.design_matrix)
-		self.rsq = 1.0 - np.sum((explained_signal[:,explained_times] - self.resampled_signal[:,explained_times])**2) / np.sum(self.resampled_signal[:,explained_times].squeeze()**2) 
-		return self.rsq
+		self.rsq = 1.0 - np.sum((explained_signal[:,explained_times] - self.resampled_signal[:,explained_times])**2, axis = -1) / np.sum(self.resampled_signal[:,explained_times].squeeze()**2, axis = -1) 
+		return np.squeeze(self.rsq)
 
 	def bootstrap_on_residuals(self, nr_repetitions = 1000):
 		"""bootstrap_on_residuals bootstraps, by shuffling the residuals. bootstrap_on_residuals should only be used on single-channel data, as otherwise the memory load might increase too much. This uses the lstsq backend regression for a single-pass fit across repetitions. Please note that shuffling the residuals may change the autocorrelation of the bootstrap samples relative to that of the original data and that may reduce its validity. Reference: https://en.wikipedia.org/wiki/Bootstrapping_(statistics)#Resampling_residuals
