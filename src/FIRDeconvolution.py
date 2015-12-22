@@ -193,15 +193,15 @@ class FIRDeconvolution(object):
 		
 		self.logger.debug('created %s design_matrix' % (str(self.design_matrix.shape)))
 
-	def add_continuous_regressors_to_design_matrix(self, regressor):
+	def add_continuous_regressors_to_design_matrix(self, regressors):
 		"""add_continuous_regressors_to_design_matrix appends continuously sampled regressors to the existing design matrix. One uses this addition to the design matrix when one expects the data to contain nuisance factors that aren't tied to the moments of specific events. For instance, in fMRI analysis this allows us to add cardiac / respiratory regressors, as well as tissue and head motion timecourses to the designmatrix.
 		
-			:param regressor: the signal to be appended to the design matrix.
-			:type regressor: numpy array, with shape equal to (nr_regressors, self.resampled_signal.shape[-1])
+			:param regressors: the signal to be appended to the design matrix.
+			:type regressors: numpy array, with shape equal to (nr_regressors, self.resampled_signal.shape[-1])
 		"""
 		previous_design_matrix_shape = self.design_matrix.shape
 		if len(regressors.shape) == 1:
-			regressors = regressor[np.newaxis, :]
+			regressors = regressors[np.newaxis, :]
 		assert regressors.shape[1] is self.resampled_signal.shape[1], \
 				'additional regressor shape %s does not conform to designmatrix shape %s' % (regressors.shape, self.resampled_signal.shape)
 		# and, an hstack append
