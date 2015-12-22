@@ -199,14 +199,14 @@ class FIRDeconvolution(object):
 			:param regressor: the signal to be appended to the design matrix.
 			:type regressor: numpy array, with shape equal to (nr_regressors, self.resampled_signal.shape[-1])
 		"""
-		previous_design_matrix_shape = design_matrix.shape
+		previous_design_matrix_shape = self.design_matrix.shape
 		if len(regressors.shape) == 1:
 			regressors = regressor[np.newaxis, :]
 		assert regressors.shape[1] is self.resampled_signal.shape[1], \
 				'additional regressor shape %s does not conform to designmatrix shape %s' % (regressors.shape, self.resampled_signal.shape)
 		# and, an hstack append
 		self.design_matrix = np.hstack((self.design_matrix, regressors))
-		self.logger.debug('added %s continuous regressors to %s design_matrix, shape now %s' % (str(regressors.shape), str(previous_design_matrix_shape), str(design_matrix.shape)))
+		self.logger.debug('added %s continuous regressors to %s design_matrix, shape now %s' % (str(regressors.shape), str(previous_design_matrix_shape), str(self.design_matrix.shape)))
 
 	def regress(self, method = 'lstsq'):
 		"""regress performs linear least squares regression of the designmatrix on the data. 
