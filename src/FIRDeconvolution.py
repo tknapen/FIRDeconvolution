@@ -166,7 +166,7 @@ class FIRDeconvolution(object):
 					# and correct for differences in durations between different regressor types.
 					over_durations_dm /= mean_duration
 				# add the designmatrix for this event to the full design matrix for this type of event.
-				regressors_for_event[:,eti:eti+self.deconvolution_interval_size] += over_durations_dm
+				regressors_for_event[:,eti:int(eti+self.deconvolution_interval_size)] += over_durations_dm
 		
 		return regressors_for_event
 
@@ -259,7 +259,7 @@ class FIRDeconvolution(object):
 		"""
 		# find the index in the designmatrix of the current covariate
 		this_covariate_index = self.covariates.keys().index(covariate)
-		return self.betas[this_covariate_index*self.deconvolution_interval_size:(this_covariate_index+1)*self.deconvolution_interval_size]
+		return self.betas[int(this_covariate_index*self.deconvolution_interval_size):int((this_covariate_index+1)*self.deconvolution_interval_size)]
 
 	def betas_for_events(self):
 		"""betas_for_events creates an internal self.betas_per_event_type array, of (nr_covariates x self.devonvolution_interval_size), 
@@ -297,7 +297,8 @@ class FIRDeconvolution(object):
 		explained_times = self.design_matrix.sum(axis = 0) != 0
 
 		explained_signal = self.predict_from_design_matrix(self.design_matrix)
-		self.rsq = 1.0 - np.sum((explained_signal[:,explained_times] - self.resampled_signal[:,explained_times])**2, axis = -1) / np.sum(self.resampled_signal[:,explained_times].squeeze()**2, axis = -1) 
+		self.rsq = 1.0 - np.sum((explained_signal[:,explained_times] - self.resampled_signal[:,explained_times])**2, axis = -1) / np.sum(self.resampled_signal[:,explained_times].squeeze()**2, axis = -1)
+		self.ssr = np.sum((explained_signal[:,explained_times] - self.resampled_signal[:,explained_times])**2, axis = -1)
 		return np.squeeze(self.rsq)
 
 	def bootstrap_on_residuals(self, nr_repetitions = 1000):
