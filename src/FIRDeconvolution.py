@@ -87,9 +87,9 @@ class FIRDeconvolution(object):
 			self.deconvolution_frequency = deconvolution_frequency
 
 		self.resampling_factor = self.sample_frequency/self.deconvolution_frequency		
-		self.deconvolution_interval_size = np.round((self.deconvolution_interval[1] - self.deconvolution_interval[0]) * self.deconvolution_frequency)
-		if not np.allclose([round(self.deconvolution_interval_size)], [self.deconvolution_interval_size]):
-			print 'self.deconvolution_interval_size, %3.6f should be integer. I don\'t know why, but it\'s neater.'%self.deconvolution_interval_size
+		self.deconvolution_interval_size = int(np.round((self.deconvolution_interval[1] - self.deconvolution_interval[0]) * self.deconvolution_frequency))
+		# if not np.allclose([round(self.deconvolution_interval_size)], [self.deconvolution_interval_size]):
+		# 	print 'self.deconvolution_interval_size, %3.6f should be integer. I don\'t know why, but it\'s neater.'%self.deconvolution_interval_size
 		self.deconvolution_interval_timepoints = np.linspace(self.deconvolution_interval[0],self.deconvolution_interval[1],self.deconvolution_interval_size)
 
 		# duration of signal in seconds and at deconvolution frequency
@@ -173,7 +173,7 @@ class FIRDeconvolution(object):
 	def create_design_matrix(self):
 		"""create_design_matrix calls create_event_regressors for each of the covariates in the self.covariates dict. self.designmatrix is created and is shaped (nr_regressors, self.resampled_signal.shape[-1])
 		"""
-		self.design_matrix = np.zeros((self.number_of_event_types*self.deconvolution_interval_size, self.resampled_signal_size))
+		self.design_matrix = np.zeros((int(self.number_of_event_types*self.deconvolution_interval_size), self.resampled_signal_size))
 
 		for i, covariate in enumerate(self.covariates.keys()):
 			# document the creation of the designmatrix step by step
