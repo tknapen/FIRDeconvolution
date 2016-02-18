@@ -194,7 +194,7 @@ class FIRDeconvolution(object):
 			self.design_matrix = (self.design_matrix.T - self.design_matrix.mean(axis = -1)).T
 		if intercept:
 			# similarly, intercept is a choice.
-			self.design_matrix = np.hstack((self.design_matrix, np.ones(self.design_matrix.shape[-1])))
+			self.design_matrix = np.vstack((self.design_matrix, np.ones((1,self.design_matrix.shape[-1]))))
 		
 		self.logger.debug('created %s design_matrix' % (str(self.design_matrix.shape)))
 
