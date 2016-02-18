@@ -4,7 +4,7 @@
 import os
 from os import path as op
 
-import setuptools
+import setuptools  # noqa; we are using a setuptools namespace
 from numpy.distutils.core import setup
 
 # get the version 
@@ -56,6 +56,6 @@ if __name__ == "__main__":
           platforms='any',
 	      packages=['fir'],
 	      package_dir={'fir': 'src'},
-	      package_data={'fir': ['src/test/*.ipynb', 'src/test/data/*.csv']} #,
+	      package_data={'fir': ['src/test/*.ipynb']} #,
        #    scripts=['bin/fir']
        )
