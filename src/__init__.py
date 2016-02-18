@@ -1,3 +1,3 @@
-__version__ = '0.0.dev11'
+__version__ = '0.0.2'
 
 from FIRDeconvolution import FIRDeconvolution
