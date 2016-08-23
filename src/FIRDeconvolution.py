@@ -89,7 +89,7 @@ class FIRDeconvolution(object):
 		self.resampling_factor = self.sample_frequency/self.deconvolution_frequency		
 		self.deconvolution_interval_size = np.round((self.deconvolution_interval[1] - self.deconvolution_interval[0]) * self.deconvolution_frequency)
 		if not np.allclose([round(self.deconvolution_interval_size)], [self.deconvolution_interval_size]):
-			print 'self.deconvolution_interval_size, %3.6f should be integer. I don\'t know why, but it\'s neater.'%self.deconvolution_interval_size
+			print('self.deconvolution_interval_size, %3.6f should be integer. I don\'t know why, but it\'s neater.'%self.deconvolution_interval_size)
 		self.deconvolution_interval_timepoints = np.linspace(self.deconvolution_interval[0],self.deconvolution_interval[1],self.deconvolution_interval_size)
 
 		# duration of signal in seconds and at deconvolution frequency
