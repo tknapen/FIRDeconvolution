@@ -191,7 +191,7 @@ class FIRDeconvolution(object):
 		if demean:
 			# we expect the data to be demeaned. 
 			# it's an option whether the regressors should be, too
-		self.design_matrix = (self.design_matrix.T - self.design_matrix.mean(axis = -1)).T
+			self.design_matrix = (self.design_matrix.T - self.design_matrix.mean(axis = -1)).T
 		if intercept:
 			# similarly, intercept is a choice.
 			self.design_matrix = np.vstack((self.design_matrix, np.ones((1,self.design_matrix.shape[-1]))))
