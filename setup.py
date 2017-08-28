@@ -7,7 +7,7 @@ from os import path as op
 import setuptools  # noqa; we are using a setuptools namespace
 from numpy.distutils.core import setup
 
-# get the version (don't import mne here, so dependencies are not needed)
+# get the version 
 version = None
 with open(os.path.join('src', '__init__.py'), 'r') as fid:
     for line in (line.strip() for line in fid):
