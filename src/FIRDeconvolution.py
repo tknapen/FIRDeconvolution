@@ -19,7 +19,6 @@ import math
 import numpy as np
 import scipy as sp
 
-import statsmodels.api as sm
 import numpy.linalg as LA
 from sklearn import linear_model
 
@@ -90,6 +89,7 @@ class FIRDeconvolution(object):
         self.deconvolution_interval_size = np.round((self.deconvolution_interval[1] - self.deconvolution_interval[0]) * self.deconvolution_frequency)
         if not np.allclose([round(self.deconvolution_interval_size)], [self.deconvolution_interval_size]):
             print('self.deconvolution_interval_size, %3.6f should be integer. I don\'t know why, but it\'s neater.'%self.deconvolution_interval_size)
+        self.deconvolution_interval_size = int(self.deconvolution_interval_size)
         self.deconvolution_interval_timepoints = np.linspace(self.deconvolution_interval[0],self.deconvolution_interval[1],self.deconvolution_interval_size)
 
         # duration of signal in seconds and at deconvolution frequency
@@ -137,7 +137,7 @@ class FIRDeconvolution(object):
         if durations is None:
             durations = np.ones(self.event_times_indices.shape)
         else:
-            durations = np.round(durations).astype(int)
+            durations = np.round(durations*self.deconvolution_frequency).astype(int)
         mean_duration = np.mean(durations)
 
         # set up output array
@@ -225,6 +225,8 @@ class FIRDeconvolution(object):
             self.betas, residuals_sum, rank, s = LA.lstsq(self.design_matrix.T, self.resampled_signal.T)
             self.residuals = self.resampled_signal - self.predict_from_design_matrix(self.design_matrix)
         elif method is 'sm_ols':
+            import statsmodels.api as sm
+
             assert self.resampled_signal.shape[0] == 1, \
                     'signal input into statsmodels OLS cannot contain multiple signals at once, present shape %s' % str(self.resampled_signal.shape)
             model = sm.OLS(np.squeeze(self.resampled_signal),self.design_matrix.T)
@@ -244,7 +246,7 @@ class FIRDeconvolution(object):
             :type alphas: numpy array, from >0 to 1. 
             :returns: instance variables 'betas' (nr_betas x nr_signals) and 'residuals' (nr_signals x nr_samples) are created.
         """
-        if alphas == None:
+        if alphas is None:
             alphas = np.logspace(7, 0, 20)
         self.rcv = linear_model.RidgeCV(alphas=alphas, 
                 fit_intercept=False, 
@@ -328,9 +330,9 @@ class FIRDeconvolution(object):
 
         self.bootstrap_betas_per_event_type = np.zeros((len(self.covariates), self.deconvolution_interval_size, nr_repetitions))
 
-        for i, covariate in enumerate(self.covariates.keys()):
+        for i, covariate in enumerate(list(self.covariates.keys())):
             # find the index in the designmatrix of the current covariate
-            this_covariate_index = self.covariates.keys().index(covariate)
+            this_covariate_index = list(self.covariates.keys()).index(covariate)
             self.bootstrap_betas_per_event_type[i] = self.bootstrap_betas[this_covariate_index*self.deconvolution_interval_size:(this_covariate_index+1)*self.deconvolution_interval_size]
 
 
