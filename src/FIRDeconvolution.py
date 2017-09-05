@@ -18,6 +18,7 @@ import logging
 import math
 import numpy as np
 import scipy as sp
+import scipy.signal
 
 import numpy.linalg as LA
 from sklearn import linear_model
@@ -95,7 +96,7 @@ class FIRDeconvolution(object):
         # duration of signal in seconds and at deconvolution frequency
         self.signal_duration = self.signal.shape[-1] / self.sample_frequency
         self.resampled_signal_size = int(self.signal_duration*self.deconvolution_frequency)
-        self.resampled_signal = sp.signal.resample(self.signal, self.resampled_signal_size, axis = -1)
+        self.resampled_signal = scipy.signal.resample(self.signal, self.resampled_signal_size, axis = -1)
 
         # if no covariates, we make a new covariate dictionary specifying only ones.
         # we will loop over these covariates instead of the event list themselves to create design matrices
