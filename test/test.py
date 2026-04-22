@@ -131,7 +131,7 @@ fd.calculate_rsq()
 
 f = pl.figure(figsize = (10,8))
 s = f.add_subplot(311)
-s.set_title('FIR responses, Rsq is %1.3f'%fd.rsq)
+s.set_title('FIR responses, Rsq is %1.3f' % float(np.squeeze(fd.rsq)))
 for dec in fd.betas_per_event_type.squeeze():
     pl.plot(fd.deconvolution_interval_timepoints, dec)
 # fd.covariates, being a dictionary, cannot be assumed to maintain the event order. 
@@ -186,7 +186,7 @@ fd.calculate_rsq()
 
 f = pl.figure(figsize = (10,8))
 s = f.add_subplot(311)
-s.set_title('FIR responses, Rsq is %1.3f'%fd.rsq)
+s.set_title('FIR responses, Rsq is %1.3f' % float(np.squeeze(fd.rsq)))
 for dec in fd.betas_per_event_type.squeeze():
     pl.plot(fd.deconvolution_interval_timepoints, dec)
 # fd.covariates, being a dictionary, cannot be assumed to maintain the event order. 
