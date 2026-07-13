@@ -100,12 +100,12 @@ class FIRDeconvolution(object):
 
         # if no covariates, we make a new covariate dictionary specifying only ones.
         # we will loop over these covariates instead of the event list themselves to create design matrices
-        if covariates == None:
+        if covariates is None:
             self.covariates = dict(zip(self.event_names, [np.ones(len(ev)) for ev in events]))
         else:
             self.covariates = covariates
 
-        if durations == None:
+        if durations is None:
             self.durations = dict(zip(self.event_names, [np.ones(len(ev))/deconvolution_frequency for ev in events]))
         else:
             self.durations = durations
@@ -222,10 +222,10 @@ class FIRDeconvolution(object):
             :returns: instance variables 'betas' (nr_betas x nr_signals) and 'residuals' (nr_signals x nr_samples) are created.
         """
 
-        if method is 'lstsq':
-            self.betas, residuals_sum, rank, s = LA.lstsq(self.design_matrix.T, self.resampled_signal.T)
+        if method == 'lstsq':
+            self.betas, residuals_sum, rank, s = LA.lstsq(self.design_matrix.T, self.resampled_signal.T, rcond=None)
             self.residuals = self.resampled_signal - self.predict_from_design_matrix(self.design_matrix)
-        elif method is 'sm_ols':
+        elif method == 'sm_ols':
             import statsmodels.api as sm
 
             assert self.resampled_signal.shape[0] == 1, \
@@ -327,7 +327,7 @@ class FIRDeconvolution(object):
         for x in range(bootstrap_data.shape[-1]): # loop over bootstrapsamples
             bootstrap_data[:,x] = (self.residuals.T[np.random.permutation(self.resampled_signal_size)] + explained_signal).squeeze()
 
-        self.bootstrap_betas, bs_residuals, rank, s = LA.lstsq(self.design_matrix.T, bootstrap_data)
+        self.bootstrap_betas, bs_residuals, rank, s = LA.lstsq(self.design_matrix.T, bootstrap_data, rcond=None)
 
         self.bootstrap_betas_per_event_type = np.zeros((len(self.covariates), self.deconvolution_interval_size, nr_repetitions))
 
